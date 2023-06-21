@@ -1,4 +1,5 @@
 {
     "liveshare.guestApprovalRequired": true,
-    "liveshare.shareExternalFiles": false
+    "liveshare.shareExternalFiles": false,
+    "liveshare.autoShareServers": false,
 }
