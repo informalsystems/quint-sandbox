@@ -12,9 +12,6 @@ module simplePonzi {
   // addresses are string literals
   type Addr = str
 
-  // the set of addresses is not fixed, see simplePonziTest below
-  const ADDR: Set[Addr]
-
   // a state of the EVM that is observed/modified by the contract
   type EvmState = {
     // the account balances for every address
@@ -55,7 +52,7 @@ module simplePonzi {
       error: "New investment must be 110% of the last one",
       evm: evm,
       ponzi: ponzi,
-    } else
+    } else {
       pure val newBalances =
         evm.balances
           .setBy(investor, old => old - amount)
@@ -65,6 +62,7 @@ module simplePonzi {
         ponzi: { currentInvestor: investor, currentInvestment: amount },
         error: "",
       }
+    }
   }
 }
 
@@ -73,9 +71,7 @@ module simplePonzi {
 module simplePonziTest {
   pure val addr = Set("alice", "bob", "charlie", "eve")
 
-  import simplePonzi(ADDR = addr) as I
-
-  export I.*
+  import simplePonzi.*
 
   var evmState: EvmState
   var ponziState: PonziState
