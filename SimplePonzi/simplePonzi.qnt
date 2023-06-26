@@ -45,13 +45,17 @@ module simplePonzi {
   pure def receive(evm: EvmState,
       ponzi: PonziState, investor: Addr, amount: int): Result = {
     if (amount > evm.balances.get(investor)) {
-      error: "Insufficient funds",
-      evm: evm,
-      ponzi: ponzi,
+      {
+        error: "Insufficient funds",
+        evm: evm,
+        ponzi: ponzi,
+      }
      } else if (amount < 11 * ponzi.currentInvestment / 10) {
-      error: "New investment must be 110% of the last one",
-      evm: evm,
-      ponzi: ponzi,
+      {
+        error: "New investment must be 110% of the last one",
+        evm: evm,
+        ponzi: ponzi,
+      }
     } else {
       pure val newBalances =
         evm.balances
