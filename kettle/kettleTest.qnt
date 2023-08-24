@@ -34,9 +34,16 @@ module kettleTest {
       .then(depressButton)
   }
 
-  temporal noOverheat = always(temperature <= 100)
+  // check this property with quint verify --invariant=noCooldownInv
+  temporal noCooldownInv =
+    next(temperature) >= temperature
 
-  temporal eventuallyOff = eventually(not(heatingOn))
+  temporal noOverheat =
+    always(temperature <= 100)
 
-  temporal onThenOff = always(heatingOn implies eventually(not(heatingOn)))
+  temporal eventuallyOff =
+    eventually(not(heatingOn))
+
+  temporal onThenOff =
+    always(heatingOn implies eventually(not(heatingOn)))
 }
