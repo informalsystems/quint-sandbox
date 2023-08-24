@@ -33,4 +33,10 @@ module kettleTest {
       .then(80.reps(_ => step))
       .then(depressButton)
   }
+
+  temporal noOverheat = always(temperature <= 100)
+
+  temporal eventuallyOff = eventually(not(heatingOn))
+
+  temporal onThenOff = always(heatingOn implies eventually(not(heatingOn)))
 }
