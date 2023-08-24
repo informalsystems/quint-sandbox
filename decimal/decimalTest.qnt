@@ -26,7 +26,6 @@ module decimalTest {
        }
     }
 
-
     // apply a binary operator
     action applyBinary(name: str, f: (Dec, Dec) => Dec): bool = {
         nondet i = 0.to(2^MAX_DEC_BIT_LEN).oneOf()
