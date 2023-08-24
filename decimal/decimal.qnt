@@ -1,3 +1,5 @@
+// -*- mode: Bluespec; -*-
+
 /**
  * A specification of Cosmos SDK decimals.
  *

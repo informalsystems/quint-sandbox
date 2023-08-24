@@ -1,3 +1,4 @@
+// -*- mode: Bluespec; -*-
 module base {
   /// A hop is a step taken by a token sent from one chain to another. In this
   /// spec, we only care about one element of the hop (sometimes the source

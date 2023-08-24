@@ -1,3 +1,4 @@
+// -*- mode: Bluespec; -*-
 module decimalTest {
     import decimal.* from "./decimal"
 

@@ -1,3 +1,4 @@
+// -*- mode: Bluespec; -*-
 module kettleTest {
   import kettle.* from "./kettle"
 
