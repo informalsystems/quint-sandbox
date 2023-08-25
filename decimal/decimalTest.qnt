@@ -40,30 +40,30 @@ module decimalTest {
 
     // apply a unary operator
     action applyUnary(name: str, f: (Dec) => Dec): bool = {
-        nondet i = 0.to(2^MAX_DEC_BIT_LEN).oneOf()
-        pure val di: Dec = { error: false, value: i }
+        nondet whole = (-2^256 + 1).to(2^256 - 1).oneOf()
+        nondet frac = (-10^18 + 1).to(10^18 - 1).oneOf()
+        pure val d: Dec = { error: false, value: whole * ONE + frac }
         all {
-            isDec(i),
             opcode' = name,
-            opArg1' = di,
+            opArg1' = d,
             opArg2' = newDecFromInt(0),
-            opResult' = f(di),
+            opResult' = f(d),
        }
     }
 
     // apply a binary operator
     action applyBinary(name: str, f: (Dec, Dec) => Dec): bool = {
-        nondet i = 0.to(2^MAX_DEC_BIT_LEN).oneOf()
-        nondet j = 0.to(2^MAX_DEC_BIT_LEN).oneOf()
-        pure val di: Dec = { error: false, value: i }
-        pure val dj: Dec = { error: false, value: j }
+        nondet whole1 = (-2^256 + 1).to(2^256 - 1).oneOf()
+        nondet frac1 = (-10^18 + 1).to(10^18 - 1).oneOf()
+        nondet whole2 = (-2^256 + 1).to(2^256 - 1).oneOf()
+        nondet frac2 = (-10^18 + 1).to(10^18 - 1).oneOf()
+        pure val d1: Dec = { error: false, value: whole1 * ONE + frac1 }
+        pure val d2: Dec = { error: false, value: whole2 * ONE + frac2 }
         all {
-            isDec(i),
-            isDec(j),
             opcode' = name,
-            opArg1' = di,
-            opArg2' = dj,
-            opResult' = f(di, dj),
+            opArg1' = d1,
+            opArg2' = d2,
+            opResult' = f(d1, d2),
        }
     }
 

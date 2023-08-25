@@ -46,7 +46,7 @@ module decimal {
      * In cosmos-sdk v0.45.1, MAX_DEC_BIT_LEN == 316.
      * In cosmos-sdk v0.46.4, MAX_DEC_BIT_LEN == 315.
      */
-    pure val MAX_DEC_BIT_LEN = 315
+    pure val MAX_DEC_BIT_LEN = 316
 
     // This is 1.00...00 with PRECISION digits afer '.' represented as an integer
     pure val ONE = 10^PRECISION
@@ -74,9 +74,9 @@ module decimal {
     // Some of the code is checking isBitLenOk instead.
     pure def isDec(bigint: int): bool = and {
         // the whole part fits into 256 bits (ignoring the sign)
-        abs(bigint / ONE) <= 2^256 - 1,
+        abs(bigint / ONE) < 2^256,
         // the fractional part represents up to PRECISION digits
-        abs(bigint % ONE) < 10^(PRECISION + 1)
+        abs(bigint % ONE) < 10^PRECISION,
     }
 
     // This is the invariant that is often checked in the code.
