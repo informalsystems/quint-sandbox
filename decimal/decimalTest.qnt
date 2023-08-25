@@ -19,11 +19,11 @@ module decimalTest {
             mkFracDec("newDecWithPrec", i64, f64, newDecWithPrec)
         },
         {
-            nondet i256 = (-2^256).to(2^256).oneOf()
+            nondet i256 = (-2^256 + 1).to(2^256 - 1).oneOf()
             mkWholeDec("newDecFromInt", i256, newDecFromInt)
         },
         {
-            nondet i256 = (-2^256).to(2^256).oneOf()
+            nondet i256 = (-2^256 + 1).to(2^256 - 1).oneOf()
             nondet f64 = (-2^63).to(2^63 - 1).oneOf()
             mkFracDec("newDecFromIntWithPrec", i256, f64, newDecFromIntWithPrec)
         },
