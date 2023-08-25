@@ -1,5 +1,29 @@
 // -*- mode: Bluespec; -*-
 
+// auxilliary definitions that do not belong to the original code
+module aux {
+    /**
+     * Return the absolute value of a math integer.
+     */
+    pure def abs(x: int): int = {
+        if (x >= 0) x else -x
+    }
+
+    /**
+     * Does an integer fit into 64 bits?
+     */
+    pure def isInt64(i: int): bool = {
+        i >= -2^63 and i < 2^63
+    }
+
+    /**
+     * Does an integer fit into a Golang Int?
+     */
+    pure def isGoInt(i: int): bool = {
+        abs(i) < 2^256
+    }
+}
+
 /**
  * A specification of Cosmos SDK decimals.
  *
@@ -8,6 +32,8 @@
  * https://github.com/cosmos/cosmos-sdk/blob/v0.46.4/types/decimal.go
  */
 module decimal {
+    import aux.*
+
     // The number of decimal places to the right of '.',
     // that is, in the FRACTIONAL part.
     pure val PRECISION = 18
@@ -39,31 +65,77 @@ module decimal {
      */
     type Dec = { error: bool, value: int }
 
-    /**
-     * Return the absolute value of a math integer.
-     */
-    pure def abs(x: int): int = {
-        if (x >= 0) x else -x
-    }
-
     // Go Int wraps big.Int with a 257 bit range bound
     // Checks overflow, underflow and division by zero
     // Exists in range from -(2^256 - 1) to 2^256 - 1.
 
-    // Can an integer represent a Cosmos decimal?
-    pure def isDec(bigint: int): bool = {
-        abs(bigint) <= (2^256 - 1) * ONE + 10^(PRECISION + 1) - 1
+    // Does a big integer represent a Cosmos decimal?
+    // This invariant is not enforced in the code.
+    // Some of the code is checking isBitLenOk instead.
+    pure def isDec(bigint: int): bool = and {
+        // the whole part fits into 256 bits (ignoring the sign)
+        abs(bigint / ONE) <= 2^256 - 1,
+        // the fractional part represents up to PRECISION digits
+        abs(bigint % ONE) < 10^(PRECISION + 1)
+    }
+
+    // This is the invariant that is often checked in the code.
+    // You may notice that isDec is not equivalent to isBitLenOk.
+    pure def isBitLenOk(bigint: int): bool = {
+        abs(bigint) < 2^MAX_DEC_BIT_LEN
     }
 
     /**
-     * Converts Int number to sdk.Dec number.
-     * Creates new decimal number from big integer assuming WHOLE numbers.
+     * Construct a decimal representation of a 64-bit integer.
+     * In Golang, this operator always succeeds.
+     * Our definition fails if int64 does not fit into 64 bits.
      */
-    pure def toDec(bigint: int): Dec = {
+    pure def newDec(int64: int): Dec = {
         {
-            error: not(isDec(bigint * ONE)),
-            value: bigint * ONE
+            error: not(isInt64(int64)),
+            value: int64 * ONE
         }
+    }
+
+    /**
+     * Construct a decimal representation of whole and fractional parts.
+     * In Golang, this operator always succeeds.
+     * Our definition fails if int64 or prec64 do not fit into 64 bits.
+     */
+    pure def newDecWithPrec(int64: int, prec64: int): Dec = {
+        {
+            error: not(isInt64(int64)) or not(isInt64(prec64)),
+            value: int64 * ONE + prec64
+        }
+    }
+
+    /**
+     * Construct a whole decimal from bigint.
+     */
+    pure def newDecFromBigInt(i: int): Dec = {
+        { error: false, value: i * ONE }
+    }
+
+    /**
+     * Construct a decimal with a whole part represented with
+     * bigint and a fractional part represented with a 64-bit integer.
+     */
+    pure def newDecFromBigIntWithPrec(whole: int, prec64: int): Dec = {
+        { error: not(isInt64(prec64)), value: whole * ONE + prec64}
+    }
+
+    /**
+     * Construct a whole decimal from a golang math.Int.
+     */
+    pure def newDecFromInt(i: int): Dec = {
+        { error: not(isGoInt(i)), value: i * ONE }
+    }
+
+    /**
+     * Construct a decimal from a golang math.Int and a 64-bit integer.
+     */
+    pure def newDecFromIntWithPrec(i: int, prec64: int): Dec = {
+        { error: not(isGoInt(i)) or not(isInt64(prec64)), value: i * ONE + prec64 }
     }
 
     /**
@@ -76,7 +148,7 @@ module decimal {
             y
         } else {
             pure val sum: int = x.value + y.value
-            { error: abs(sum) >= 2^MAX_DEC_BIT_LEN, value: sum }
+            { error: not(isBitLenOk(sum)), value: sum }
         }
     }
 
@@ -127,7 +199,7 @@ module decimal {
         } else {
             pure val quoX = (x.value * PRECISION * PRECISION) / y.value
             pure val chopped = chopPrecisionAndRound({ error: false, value: quoX })
-            { ...chopped, error: abs(chopped.value) >= 2^MAX_DEC_BIT_LEN }
+            { ...chopped, error: not(isBitLenOk(chopped.value)) }
         }
     }
 
@@ -144,7 +216,7 @@ module decimal {
         } else {
             pure val quoX = (x.value * PRECISION * PRECISION) / y.value
             pure val chopped = quoX / PRECISION
-            { error: abs(chopped) >= 2^MAX_DEC_BIT_LEN, value: chopped }
+            { error: not(isBitLenOk(chopped)), value: chopped }
         }
     }
 
@@ -167,7 +239,7 @@ module decimal {
             pure val chopped: Dec =
                 chopPrecisionAndRound({ error: false, value: mathProd })
             // equivalent to absResult.BitLen() > maxDecBitLen of Golang
-            { error: abs(chopped.value) >= 2^MAX_DEC_BIT_LEN, value: chopped.value }
+            { error: not(isBitLenOk(chopped.value)), value: chopped.value }
         }
     }
 
@@ -176,7 +248,7 @@ module decimal {
      */
     pure def mulTruncate(x: Dec, y: Dec): Dec = {
         pure val chopped = x.mul(y).quoInt(ONE)
-        { error: abs(chopped.value) >= 2^MAX_DEC_BIT_LEN, value: chopped.value }
+        { error: not(isBitLenOk(chopped.value)), value: chopped.value }
     }
 
     /**

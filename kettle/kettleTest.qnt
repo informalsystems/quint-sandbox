@@ -34,6 +34,14 @@ module kettleTest {
       .then(depressButton)
   }
 
+  // a simple state invariant
+  def noBeepingWhenHeating =
+    heatingOn implies not(beeping)
+
+  // a false invariant: the temperature stays below 30C
+  def noOverheatInv =
+    temperature <= 100
+
   // check this property with quint verify --invariant=noCooldownInv
   temporal noCooldownInv =
     next(temperature) >= temperature
