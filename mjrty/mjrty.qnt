@@ -5,12 +5,13 @@
  * See: https://www.cs.utexas.edu/users/boyer/ftp/ics-reports/cmp32.pdf
  */
 module mjrty {
+  // an upper bound on the list length
+  pure val BOUND = 20
+
   var votes: int -> str
   var cand: str
   var i: int
   var k: int
-
-  pure val BOUND = 20
 
   action init = all {
     nondet len = 0.to(BOUND).oneOf()
