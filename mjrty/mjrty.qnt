@@ -1,57 +1,80 @@
+// -*- mode: Bluespec; -*-
 /**
  * A Fast Majority Vote Algorithm by J Strother Moore.
  *
  * See: https://www.cs.utexas.edu/users/boyer/ftp/ics-reports/cmp32.pdf
  */
 module mjrty {
-  const votes: List[str]
+  var votes: int -> str
   var cand: str
   var i: int
   var k: int
 
+  pure val BOUND = 20
+
   action init = all {
+    nondet len = 0.to(BOUND).oneOf()
+    pure val boundedSet = 0.to(BOUND).filter(j => j < len) // a hack for Apalache
+    nondet v = boundedSet.setOfMaps(Set("A", "B", "C")).oneOf()
+    votes' = v,
     cand' = "",
     i' = 0,
     k' = 0,
   }
 
   action step = all {
-    i < length(votes),
+    keys(votes).contains(i),
     any {
       all {
         k == 0,
-        cand' = votes[i],
+        cand' = votes.get(i),
         k' = 1,
       },
       all {
-        cand == votes[i],
+        k != 0,
+        cand == votes.get(i),
         cand' = cand,
         k' = k + 1,
       },
       all {
-        cand != votes[i],
+        k != 0,
+        cand != votes.get(i),
         cand' = cand,
         k' = k - 1,
       },
     },
     i' = i + 1,
+    votes' = votes,
   }
 
-  val invariant = {
-    (i == length(votes))
-      implies
+  // the property of the algorithm?
+  val invariant = or {
+    // empty input
+    votes.keys() == Set(),
+    // not finished yet
+    keys(votes).contains(i),
+    // finished and found a winner
     {
-      val candidates = indices(votes).map(j => votes[j])
-      val winnerCount = indices(votes).filter(j => votes[j] == cand).size()
+      val winnerCount = keys(votes).filter(j => votes.get(j) == cand).size()
+      val otherCount = keys(votes).filter(j => votes.get(j) != cand).size()
+      winnerCount > otherCount
+      /*
+      // this is not the right property:
+      val candidates = keys(votes).map(j => votes.get(j))
       candidates.forall(c =>
-        val count = indices(votes).filter(j => votes[j] == c).size()
+        val count = keys(votes).filter(j => votes.get(j) == c).size()
         count <= winnerCount
       )
-    }
+      */
+    },
+    // finished but there is no majority
+    {
+      val candidates = keys(votes).map(j => votes.get(j))
+      candidates.forall(c =>
+        val myCount = keys(votes).filter(j => votes.get(j) == c).size()
+        val otherCount = keys(votes).filter(j => votes.get(j) != c).size()
+        myCount <= otherCount
+      )
+    },
   }
-}
-
-module mjrtyTest {
-  import mjrty(votes = ["A", "A", "A", "C", "C", "B", "B", "C", "C", "C", "A", "A", "A"]) as M
-  export M.*
 }
