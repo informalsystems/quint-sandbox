@@ -6,7 +6,7 @@
  */
 module mjrty {
   // an upper bound on the list length
-  pure val BOUND = 10
+  pure val BOUND = 5
 
   var votes: int -> str
   var cand: str
@@ -14,7 +14,7 @@ module mjrty {
   var k: int
 
   action init = all {
-    nondet len = 0.to(BOUND).oneOf()
+    nondet len = 1.to(BOUND).oneOf()
     pure val boundedSet = 0.to(BOUND).filter(j => j < len) // a hack for Apalache
     nondet v = boundedSet.setOfMaps(Set("A", "B", "C")).oneOf()
     votes' = v,
@@ -50,8 +50,6 @@ module mjrty {
 
   // the property of the algorithm?
   val postcondition = or {
-    // empty input
-    votes.keys() == Set(),
     // not finished yet
     keys(votes).contains(i),
     // finished and found a winner
@@ -73,10 +71,12 @@ module mjrty {
 
   // a pure (stateless) inductive invariant for bounded inputs
   pure def pureInv(pVotes: int -> str, pCand: str, pI: int, pK: int): bool = {
-    pure val indicesBefore:Set[int] = keys(pVotes).filter(j => (j <= pI))
+    pure val indicesBefore:Set[int] = keys(pVotes).filter(j => (j < pI))
     pure val potentialCandidates: Set[str] = indicesBefore.map(j => pVotes.get(j))
     pure def noMajority(P: Set[int]): bool = {
-      P.forall(c => P.filter(j => pVotes.get(j) == c).size() * 2 < P.size())
+      potentialCandidates.forall(c =>
+        P.filter(j => pVotes.get(j) == c).size() * 2 <= P.size()
+      )
     }
     and {
       0 <= pI and pI <= pVotes.keys().size(),
@@ -84,8 +84,8 @@ module mjrty {
       powerset(indicesBefore).exists(U =>
         pure val P: Set[int] = indicesBefore.exclude(U)
         and {
-          indicesBefore.forall(j => pVotes.get(j) == pCand),
-          indicesBefore.size() == pK,
+          U.forall(j => pVotes.get(j) == pCand),
+          U.size() == pK,
           noMajority(P)
         }
       )
@@ -96,7 +96,7 @@ module mjrty {
   action indInit = {
     val potentialCandidates: Set[str] = Set("A", "B", "C")
     nondet len = 1.to(BOUND).oneOf()
-    pure val boundedSet: Set[int] = 0.to(BOUND).filter(j => j < len) // a hack for Apalache
+    pure val boundedSet = 0.to(BOUND).filter(j => j < len) // a hack for Apalache
     nondet ivotes = boundedSet.setOfMaps(potentialCandidates).oneOf()
     nondet icand = potentialCandidates.oneOf()
     nondet ii = 0.to(BOUND).oneOf()
@@ -110,8 +110,10 @@ module mjrty {
     }
  }
 
-  // This is the inductive invariant we check
-  // 1. quint verify --max-steps=1 --main=mjrty --init=indInit --invariant=indInv mjrty.qnt
+  // This is the inductive invariant that we have to check with 3 queries:
+  //
+  // 1. quint verify --max-steps=0 --main=mjrty --init=init --invariant=indInv mjrty.qnt
   // 2. quint verify --max-steps=0 --main=mjrty --init=indInit --invariant=postcondition mjrty.qnt
+  // 3. quint verify --max-steps=1 --main=mjrty --init=indInit --invariant=indInv mjrty.qnt
   val indInv = pureInv(votes, cand, i, k)
 }
