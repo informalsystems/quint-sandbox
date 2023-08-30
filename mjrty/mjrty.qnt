@@ -6,7 +6,7 @@
  */
 module mjrty {
   // an upper bound on the list length
-  pure val BOUND = 20
+  pure val BOUND = 10
 
   var votes: int -> str
   var cand: str
@@ -49,7 +49,7 @@ module mjrty {
   }
 
   // the property of the algorithm?
-  val invariant = or {
+  val postcondition = or {
     // empty input
     votes.keys() == Set(),
     // not finished yet
@@ -59,14 +59,6 @@ module mjrty {
       val winnerCount = keys(votes).filter(j => votes.get(j) == cand).size()
       val otherCount = keys(votes).filter(j => votes.get(j) != cand).size()
       winnerCount > otherCount
-      /*
-      // this is not the right property:
-      val candidates = keys(votes).map(j => votes.get(j))
-      candidates.forall(c =>
-        val count = keys(votes).filter(j => votes.get(j) == c).size()
-        count <= winnerCount
-      )
-      */
     },
     // finished but there is no majority
     {
@@ -78,4 +70,48 @@ module mjrty {
       )
     },
   }
+
+  // a pure (stateless) inductive invariant for bounded inputs
+  pure def pureInv(pVotes: int -> str, pCand: str, pI: int, pK: int): bool = {
+    pure val indicesBefore:Set[int] = keys(pVotes).filter(j => (j <= pI))
+    pure val potentialCandidates: Set[str] = indicesBefore.map(j => pVotes.get(j))
+    pure def noMajority(P: Set[int]): bool = {
+      P.forall(c => P.filter(j => pVotes.get(j) == c).size() * 2 < P.size())
+    }
+    and {
+      0 <= pI and pI <= pVotes.keys().size(),
+      0 <= pK and pK <= pI,
+      powerset(indicesBefore).exists(U =>
+        pure val P: Set[int] = indicesBefore.exclude(U)
+        and {
+          indicesBefore.forall(j => pVotes.get(j) == pCand),
+          indicesBefore.size() == pK,
+          noMajority(P)
+        }
+      )
+    }
+  }
+
+  // we use this action as an initializer
+  action indInit = {
+    val potentialCandidates: Set[str] = Set("A", "B", "C")
+    nondet len = 1.to(BOUND).oneOf()
+    pure val boundedSet: Set[int] = 0.to(BOUND).filter(j => j < len) // a hack for Apalache
+    nondet ivotes = boundedSet.setOfMaps(potentialCandidates).oneOf()
+    nondet icand = potentialCandidates.oneOf()
+    nondet ii = 0.to(BOUND).oneOf()
+    nondet ik = 0.to(BOUND).oneOf()
+    all {
+      pureInv(ivotes, icand, ii, ik),
+      votes' = ivotes,
+      cand' = icand,
+      i' = ii,
+      k' = ik,
+    }
+ }
+
+  // This is the inductive invariant we check
+  // 1. quint verify --max-steps=1 --main=mjrty --init=indInit --invariant=indInv mjrty.qnt
+  // 2. quint verify --max-steps=0 --main=mjrty --init=indInit --invariant=postcondition mjrty.qnt
+  val indInv = pureInv(votes, cand, i, k)
 }
