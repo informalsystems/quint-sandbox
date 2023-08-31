@@ -54,17 +54,17 @@ module mjrty {
     keys(votes).contains(i),
     // finished and found a winner
     {
-      val winnerCount = keys(votes).filter(j => votes.get(j) == cand).size()
-      val otherCount = keys(votes).filter(j => votes.get(j) != cand).size()
-      winnerCount > otherCount
+      val winnerVotes = keys(votes).filter(j => votes.get(j) == cand)
+      val otherVotes = keys(votes).exclude(winnerVotes)
+      winnerVotes.size() > otherVotes.size()
     },
     // finished but there is no majority
     {
       val candidates = keys(votes).map(j => votes.get(j))
       candidates.forall(c =>
-        val myCount = keys(votes).filter(j => votes.get(j) == c).size()
-        val otherCount = keys(votes).filter(j => votes.get(j) != c).size()
-        myCount <= otherCount
+        val myVotes = keys(votes).filter(j => votes.get(j) == cand)
+        val otherVotes = keys(votes).exclude(myVotes)
+        myVotes.size() <= otherVotes.size()
       )
     },
   }
