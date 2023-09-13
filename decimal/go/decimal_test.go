@@ -43,7 +43,7 @@ func parseBigInt(obj gjson.Result, target *big.Int) {
 			panic(fmt.Errorf("expected a big.Int, found: %s", bigintStr.String()))
 		}
 	} else {
-		target.SetInt64(bigintStr.Int())
+		target.SetInt64(obj.Int())
 	}
 }
 
@@ -73,11 +73,20 @@ func parseItf(filename string) []TestInput {
 
 // construct a Dec instance out of its pure integer representation
 func bigintToDec(t *testing.T, i *big.Int) sdk.Dec {
-	var s = i.String()
+	var abs big.Int
+	// work with the absolute value but remember the sign of i
+	abs.Abs(i)
+	var s = abs.String()
+	var sign string = ""
+	if i.Sign() < 0 {
+		sign = "-"
+	}
+
+	// find out where to put the dot '.'
 	if len(s) <= sdk.Precision {
-		s = "0." + s
+		s = fmt.Sprintf("%s0.%018s", sign, s)
 	} else {
-		s = fmt.Sprintf("%s.%s", s[:len(s)-sdk.Precision], s[len(s)-sdk.Precision:])
+		s = fmt.Sprintf("%s%s.%s", sign, s[:len(s)-sdk.Precision], s[len(s)-sdk.Precision:])
 	}
 
 	d, err := sdk.NewDecFromStr(s)
@@ -101,8 +110,8 @@ func executeTest(t *testing.T, s TestInput) {
 		if s.result.error {
 			require.Panics(t, func() { sdk.Dec.Add(arg1, arg2) })
 		} else {
-			expected := sdk.Dec.Add(arg1, arg2)
-			actual := bigintToDec(t, &s.result.value)
+			actual := sdk.Dec.Add(arg1, arg2)
+			expected := bigintToDec(t, &s.result.value)
 			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 
@@ -110,8 +119,8 @@ func executeTest(t *testing.T, s TestInput) {
 		if s.result.error {
 			require.Panics(t, func() { sdk.Dec.Sub(arg1, arg2) })
 		} else {
-			expected := sdk.Dec.Sub(arg1, arg2)
-			actual := bigintToDec(t, &s.result.value)
+			actual := sdk.Dec.Sub(arg1, arg2)
+			expected := bigintToDec(t, &s.result.value)
 			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 
@@ -119,8 +128,8 @@ func executeTest(t *testing.T, s TestInput) {
 		if s.result.error {
 			require.Panics(t, func() { sdk.Dec.Mul(arg1, arg2) })
 		} else {
-			expected := sdk.Dec.Mul(arg1, arg2)
-			actual := bigintToDec(t, &s.result.value)
+			actual := sdk.Dec.Mul(arg1, arg2)
+			expected := bigintToDec(t, &s.result.value)
 			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 
@@ -128,8 +137,8 @@ func executeTest(t *testing.T, s TestInput) {
 		if s.result.error {
 			require.Panics(t, func() { sdk.Dec.MulTruncate(arg1, arg2) })
 		} else {
-			expected := sdk.Dec.MulTruncate(arg1, arg2)
-			actual := bigintToDec(t, &s.result.value)
+			actual := sdk.Dec.MulTruncate(arg1, arg2)
+			expected := bigintToDec(t, &s.result.value)
 			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 
@@ -137,8 +146,8 @@ func executeTest(t *testing.T, s TestInput) {
 		if s.result.error {
 			require.Panics(t, func() { sdk.Dec.Quo(arg1, arg2) })
 		} else {
-			expected := sdk.Dec.Quo(arg1, arg2)
-			actual := bigintToDec(t, &s.result.value)
+			actual := sdk.Dec.Quo(arg1, arg2)
+			expected := bigintToDec(t, &s.result.value)
 			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 
@@ -146,8 +155,8 @@ func executeTest(t *testing.T, s TestInput) {
 		if s.result.error {
 			require.Panics(t, func() { sdk.Dec.QuoTruncate(arg1, arg2) })
 		} else {
-			expected := sdk.Dec.QuoTruncate(arg1, arg2)
-			actual := bigintToDec(t, &s.result.value)
+			actual := sdk.Dec.QuoTruncate(arg1, arg2)
+			expected := bigintToDec(t, &s.result.value)
 			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 
@@ -164,8 +173,8 @@ func executeTest(t *testing.T, s TestInput) {
 		if s.result.error {
 			require.Panics(t, func() { sdk.Dec.RoundInt(arg1) })
 		} else {
-			expected := sdk.Dec.RoundInt(arg1)
-			actual := sdk.NewIntFromBigInt(&s.result.value)
+			actual := sdk.Dec.RoundInt(arg1)
+			expected := sdk.NewIntFromBigInt(&s.result.value)
 			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 

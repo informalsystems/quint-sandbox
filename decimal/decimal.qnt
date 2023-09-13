@@ -1,43 +1,20 @@
 // -*- mode: Bluespec; -*-
-
-// auxilliary definitions that do not belong to the original code
-module aux {
-    /**
-     * Return the absolute value of a math integer.
-     */
-    pure def abs(x: int): int = {
-        if (x >= 0) x else -x
-    }
-
-    /**
-     * Does an integer fit into 64 bits?
-     */
-    pure def isInt64(i: int): bool = {
-        i >= -2^63 and i < 2^63
-    }
-
-    /**
-     * Does an integer fit into a Golang Int?
-     */
-    pure def isGoInt(i: int): bool = {
-        abs(i) < 2^256
-    }
-}
-
 /**
- * A specification of Cosmos SDK decimals.
+ * A specification of Cosmos SDK decimals (for v0.46.4).
  *
  * Igor Konnov, Informal Systems, 2022-2023.
  *
  * https://github.com/cosmos/cosmos-sdk/blob/v0.46.4/types/decimal.go
  */
+
 module decimal {
-    import aux.*
+    import aux.* from "./aux"
 
     // The number of decimal places to the right of '.',
     // that is, in the FRACTIONAL part.
     pure val PRECISION = 18
 
+    // precision multipliers for 0 to 18 digits to the right of '.'
     pure val precisionReuse = Map(
         0 -> 1,
         1 -> 10,
@@ -87,10 +64,10 @@ module decimal {
      * A decimal is a record that contains two fields:
      *
      *  - error is the error flag which is true
-     *    iff the decimal number is considered invalid (e.g., overflow);
+     *    iff the decimal number is considered invalid (e.g., on overflow);
 
-     *  - value is the math integer representing the decimal intPart.fractionalPart as
-     *    intPart * 10^PRECISION + fractionalPart.
+     *  - value is the math integer representing the decimal <intPart>.<fractionalPart> as
+     *    intPart * 10^ONE + fractionalPart.
      */
     type Dec = { error: bool, value: int }
 
