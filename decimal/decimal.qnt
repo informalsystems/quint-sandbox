@@ -38,6 +38,35 @@ module decimal {
     // that is, in the FRACTIONAL part.
     pure val PRECISION = 18
 
+    pure val precisionReuse = Map(
+        0 -> 1,
+        1 -> 10,
+        2 -> 100,
+        3 -> 1_000,
+        4 -> 10_000,
+        5 -> 100_000,
+        6 -> 1_000_000,
+        7 -> 10_000_000,
+        8 -> 100_000_000,
+        9 -> 1_000_000_000,
+        10 -> 10_000_000_000,
+        11 -> 100_000_000_000,
+        12 -> 1_000_000_000_000,
+        13 -> 10_000_000_000_000,
+        14 -> 100_000_000_000_000,
+        15 -> 1_000_000_000_000_000,
+        16 -> 10_000_000_000_000_000,
+        17 -> 100_000_000_000_000_000,
+        18 -> 1_000_000_000_000_000_000
+    )
+
+    pure def getMultiplier(prec: int): int = {
+        if (keys(precisionReuse).contains(prec))
+            precisionReuse.get(prec)
+        else
+            1
+    }
+
     /**
      * The maximum number of bits to represent a decimal,
      * up to 256 bits for the whole part and up to 59/60 bits for the digits after '.'.
@@ -46,7 +75,7 @@ module decimal {
      * In cosmos-sdk v0.45.1, MAX_DEC_BIT_LEN == 316.
      * In cosmos-sdk v0.46.4, MAX_DEC_BIT_LEN == 315.
      */
-    pure val MAX_DEC_BIT_LEN = 316
+    pure val MAX_DEC_BIT_LEN = 315
 
     // This is 1.00...00 with PRECISION digits afer '.' represented as an integer
     pure val ONE = 10^PRECISION
@@ -100,12 +129,13 @@ module decimal {
     /**
      * Construct a decimal representation of whole and fractional parts.
      * In Golang, this operator always succeeds.
-     * Our definition fails if int64 or prec64 do not fit into 64 bits.
+     * Our definition fails if int64 does not fit into 64 bits,
+     * or the precision is incorrect.
      */
     pure def newDecWithPrec(int64: int, prec64: int): Dec = {
         {
-            error: not(isInt64(int64)) or not(isInt64(prec64)),
-            value: int64 * ONE + prec64
+            error: not(isInt64(int64)) or prec64 < 0 or prec64 > PRECISION,
+            value: int64 * getMultiplier(prec64)
         }
     }
 
@@ -121,7 +151,10 @@ module decimal {
      * bigint and a fractional part represented with a 64-bit integer.
      */
     pure def newDecFromBigIntWithPrec(whole: int, prec64: int): Dec = {
-        { error: not(isInt64(prec64)), value: whole * ONE + prec64}
+        {
+            error: prec64 < 0 or prec64 > PRECISION,
+            value: whole * getMultiplier(prec64)
+        }
     }
 
     /**
@@ -135,7 +168,10 @@ module decimal {
      * Construct a decimal from a golang math.Int and a 64-bit integer.
      */
     pure def newDecFromIntWithPrec(i: int, prec64: int): Dec = {
-        { error: not(isGoInt(i)) or not(isInt64(prec64)), value: i * ONE + prec64 }
+        {
+            error: not(isGoInt(i)) or prec64 < 0 or prec64 > PRECISION,
+            value: i * getMultiplier(prec64)
+        }
     }
 
     /**
@@ -197,7 +233,7 @@ module decimal {
         } else if (y.value == 0) {
             { error: true, value: 0 }
         } else {
-            pure val quoX = (x.value * PRECISION * PRECISION) / y.value
+            pure val quoX = (x.value * ONE * ONE) / y.value
             pure val chopped = chopPrecisionAndRound({ error: false, value: quoX })
             { ...chopped, error: not(isBitLenOk(chopped.value)) }
         }
@@ -214,8 +250,8 @@ module decimal {
         } else if (y.value == 0) {
             { error: true, value: 0 }
         } else {
-            pure val quoX = (x.value * PRECISION * PRECISION) / y.value
-            pure val chopped = quoX / PRECISION
+            pure val quoX = (x.value * ONE * ONE) / y.value
+            pure val chopped = quoX / ONE
             { error: not(isBitLenOk(chopped)), value: chopped }
         }
     }
@@ -296,7 +332,7 @@ module decimal {
         } else {
             pure val value: int =   
                 if (x.value % ONE == 0 or x.value < 0) {
-                    x.value
+                    (x.value / ONE) * ONE
                 } else {
                     ((x.value / ONE) + 1) * ONE
                 }
