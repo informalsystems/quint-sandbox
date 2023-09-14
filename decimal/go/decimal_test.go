@@ -1,7 +1,11 @@
-// A simple test driver that parses a test in the ITF format and executes it.
+// A simple test harness that parses a test in the ITF format and executes it.
 //
-// A state of our testing state machine.
+// Igor Konnov, Informal Systems, 2023.
 // Thanks to Ivan Gavran for demonstrating how ITF could be parsed in Golang.
+//
+// It took me about 1 day to write this test harness and debug the specification
+// against the Golang code via fuzz.sh. My understanding of the code was wrong
+// in 5-10 cases.
 
 package main
 
@@ -37,13 +41,9 @@ type TestInput struct {
 // parse a big integer from ITF JSON
 func parseBigInt(obj gjson.Result, target *big.Int) {
 	var bigintStr = obj.Get("\\#bigint")
-	if bigintStr.Exists() {
-		_, ok := target.SetString(bigintStr.String(), 10)
-		if !ok {
-			panic(fmt.Errorf("expected a big.Int, found: %s", bigintStr.String()))
-		}
-	} else {
-		target.SetInt64(obj.Int())
+	_, ok := target.SetString(bigintStr.String(), 10)
+	if !ok {
+		panic(fmt.Errorf("expected a big.Int, found: %s", bigintStr.String()))
 	}
 }
 
@@ -101,9 +101,64 @@ func executeTest(t *testing.T, s TestInput) {
 	arg1 := bigintToDec(t, &s.arg1.value)
 	arg2 := bigintToDec(t, &s.arg2.value)
 	switch s.opcode {
+	case "newDec":
+		if s.result.error {
+			require.Panics(t, func() { sdk.NewDec(s.arg1.value.Int64()) })
+		} else {
+			actual := sdk.NewDec(s.arg1.value.Int64())
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
+		}
+
+	case "newDecWithPrec":
+		if s.result.error {
+			require.Panics(t, func() {
+				sdk.NewDecWithPrec(s.arg1.value.Int64(), s.arg2.value.Int64())
+			})
+		} else {
+			actual := sdk.NewDecWithPrec(s.arg1.value.Int64(), s.arg2.value.Int64())
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
+		}
+
 	case "newDecFromInt":
 		if s.result.error {
 			require.Panics(t, func() { sdk.NewDecFromInt(sdk.NewIntFromBigInt(&s.arg1.value)) })
+		} else {
+			actual := sdk.NewDecFromInt(sdk.NewIntFromBigInt(&s.arg1.value))
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
+		}
+
+	case "newDecFromIntWithPrec":
+		if s.result.error {
+			require.Panics(t, func() {
+				sdk.NewDecFromIntWithPrec(sdk.NewIntFromBigInt(&s.arg1.value), s.arg2.value.Int64())
+			})
+		} else {
+			actual := sdk.NewDecFromIntWithPrec(sdk.NewIntFromBigInt(&s.arg1.value), s.arg2.value.Int64())
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
+		}
+
+	case "newDecFromBigInt":
+		if s.result.error {
+			require.Panics(t, func() { sdk.NewDecFromBigInt(&s.arg1.value) })
+		} else {
+			actual := sdk.NewDecFromBigInt(&s.arg1.value)
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
+		}
+
+	case "newDecFromBigIntWithPrec":
+		if s.result.error {
+			require.Panics(t, func() {
+				sdk.NewDecFromBigIntWithPrec(&s.arg1.value, s.arg2.value.Int64())
+			})
+		} else {
+			actual := sdk.NewDecFromBigIntWithPrec(&s.arg1.value, s.arg2.value.Int64())
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 
 	case "add":
