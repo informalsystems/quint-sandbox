@@ -44,14 +44,12 @@ module decimal {
             1
     }
 
-    /**
-     * The maximum number of bits to represent a decimal,
-     * up to 256 bits for the whole part and up to 59/60 bits for the digits after '.'.
-     * This value is used in chopping.
-     *
-     * In cosmos-sdk v0.45.1, MAX_DEC_BIT_LEN == 316.
-     * In cosmos-sdk v0.46.4, MAX_DEC_BIT_LEN == 315.
-     */
+    /// The maximum number of bits to represent a decimal,
+    /// up to 256 bits for the whole part and up to 59/60 bits for the digits
+    /// to the right of '.'. This value is used in chopping.
+    ///
+    /// In cosmos-sdk v0.45.1, MAX_DEC_BIT_LEN == 316.
+    /// In cosmos-sdk v0.46.4, MAX_DEC_BIT_LEN == 315.
     pure val MAX_DEC_BIT_LEN = 315
 
     // This is 1.00...00 with PRECISION digits afer '.' represented as an integer
@@ -60,15 +58,13 @@ module decimal {
     // This is 0.500....00 with PRECISION digits after '.' represented as an integer
     pure val HALF = 5 * 10^(PRECISION - 1)
 
-    /**
-     * A decimal is a record that contains two fields:
-     *
-     *  - error is the error flag which is true
-     *    iff the decimal number is considered invalid (e.g., on overflow);
-
-     *  - value is the math integer representing the decimal <intPart>.<fractionalPart> as
-     *    intPart * 10^ONE + fractionalPart.
-     */
+    /// A decimal is a record that contains two fields:
+    ///
+    ///  - error is the error flag which is true
+    ///    iff the decimal number is considered invalid (e.g., on overflow);
+    ///
+    ///  - value is the math integer representing the decimal <intPart>.<fractionalPart> as
+    ///    intPart * 10^ONE + fractionalPart.
     type Dec = { error: bool, value: int }
 
     // Go Int wraps big.Int with a 257 bit range bound
@@ -85,17 +81,20 @@ module decimal {
         abs(bigint % ONE) < 10^PRECISION,
     }
 
-    // This is the invariant that is often checked in the code.
-    // You may notice that isDec is not equivalent to isBitLenOk.
+    /// This is the invariant that is often checked in the code:
+    /// Whether the big integer fits into a number of bits (315 or 316).
     pure def isBitLenOk(bigint: int): bool = {
         abs(bigint) < 2^MAX_DEC_BIT_LEN
     }
 
-    /**
-     * Construct a decimal representation of a 64-bit integer.
-     * In Golang, this operator always succeeds.
-     * Our definition fails if int64 does not fit into 64 bits.
-     */
+    /// Construct a decimal representation of a 64-bit integer, all digits are
+    /// copied to the left of '.'.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> newDec(123)
+    ///    { error: false, value: 123000000000000000000 }
+    /// ```
     pure def newDec(int64: int): Dec = {
         {
             error: not(isInt64(int64)),
@@ -103,47 +102,83 @@ module decimal {
         }
     }
 
-    /**
-     * Construct a decimal representation of whole and fractional parts.
-     * In Golang, this operator always succeeds.
-     * Our definition fails if int64 does not fit into 64 bits,
-     * or the precision is incorrect.
-     */
-    pure def newDecWithPrec(int64: int, prec64: int): Dec = {
+    /// Construct a decimal from a 64-bit integer `i` by specifying the number
+    /// of digits to the right of '.'. When `prec64 == 0`, `i` is copied to
+    /// to the left of '.'. When `prec64 == 0`, the last 18 digits of `i` are
+    /// copied to the right of '.', and the other digits are copied to the left
+    /// of '.'.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> newDecWithPrec(123, 0)
+    ///    { error: false, value: 123000000000000000000 }
+    ///    >>> newDecWithPrec(123, 18)
+    ///    { error: false, value: 123 }
+    /// ```
+    pure def newDecWithPrec(i: int, prec64: int): Dec = {
         {
-            error: not(isInt64(int64)) or prec64 < 0 or prec64 > PRECISION,
-            value: int64 * getMultiplier(prec64)
+            error: not(isInt64(i)) or prec64 < 0 or prec64 > PRECISION,
+            value: i * getMultiplier(prec64)
         }
     }
 
-    /**
-     * Construct a whole decimal from bigint.
-     */
+    /// Construct a decimal from a Golang big.Int. The integer is simply
+    /// copied to the left of '.'
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> newDecFromInt(123)
+    ///    { error: false, value: 123000000000000000000 }
+    /// ```
     pure def newDecFromBigInt(i: int): Dec = {
         { error: false, value: i * ONE }
     }
 
-    /**
-     * Construct a decimal with a whole part represented with
-     * bigint and a fractional part represented with a 64-bit integer.
-     */
-    pure def newDecFromBigIntWithPrec(whole: int, prec64: int): Dec = {
+    /// Construct a decimal from a Golang big.Int by specifying the number
+    /// of digits to the right of '.'. When `prec64 == 0`, `i` is copied to
+    /// to the left of '.'. When `prec64 == 0`, the last 18 digits of `i` are
+    /// copied to the right of '.', and the other digits are copied to the left
+    /// of '.'.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> newDecFromBigIntWithPrec(123, 0)
+    ///    { error: false, value: 123000000000000000000 }
+    ///    >>> newDecFromBigIntWithPrec(123, 18)
+    ///    { error: false, value: 123 }
+    /// ```
+    pure def newDecFromBigIntWithPrec(i: int, prec64: int): Dec = {
         {
             error: prec64 < 0 or prec64 > PRECISION,
-            value: whole * getMultiplier(prec64)
+            value: i * getMultiplier(prec64)
         }
     }
 
-    /**
-     * Construct a whole decimal from a golang math.Int.
-     */
+    /// Construct a decimal from a sdkmath.Int. The integer is simply
+    /// copied to the left of '.'
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> newDecFromInt(123)
+    ///    { error: false, value: 123000000000000000000 }
+    /// ```
     pure def newDecFromInt(i: int): Dec = {
         { error: not(isGoInt(i)), value: i * ONE }
     }
 
-    /**
-     * Construct a decimal from a golang math.Int and a 64-bit integer.
-     */
+    /// Construct a decimal from a sdkmath.Int by specifying the number
+    /// of digits to the right of '.'. When `prec64 == 0`, `i` is copied to
+    /// to the left of '.'. When `prec64 == 0`, the last 18 digits of `i` are
+    /// copied to the right of '.', and the other digits are copied to the left
+    /// of '.'.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> newDecFromIntWithPrec(123, 0)
+    ///    { error: false, value: 123000000000000000000 }
+    ///    >>> newDecFromIntWithPrec(123, 18)
+    ///    { error: false, value: 123 }
+    /// ```
     pure def newDecFromIntWithPrec(i: int, prec64: int): Dec = {
         {
             error: not(isGoInt(i)) or prec64 < 0 or prec64 > PRECISION,
@@ -151,9 +186,14 @@ module decimal {
         }
     }
 
-    /**
-     * Add x to y.
-     */
+    /// Add y to x.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> add({ error: false, value: 123_300000_000000_000019 },
+    ///            { error: false, value: 5_000000_000000_000000 })
+    ///    { error: false, value: 128300000000000000019 }
+    /// ```
     pure def add(x: Dec, y: Dec): Dec = {
         if (x.error) {
             x
@@ -165,18 +205,28 @@ module decimal {
         }
     }
 
-    /**
-     * Subtract y from x.
-     */
+    /// Subtract y from x.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> sub({ error: false, value: 123_300000_000000_000019 },
+    ///            { error: false, value: 5_000000_000000_000000 })
+    ///    { error: false, value: 118300000000000000019 }
+    /// ```
     pure def sub(x: Dec, y: Dec): Dec = {
-        add(x, { error: y.error, value: -y.value })
+        add(x, { ...y, value: -y.value })
     }
 
-    /**
-     * Divides the sdk.Dec number with sdk.Int number and returns sdk.Dec number
-     * but only the truncated part (unlike the QuoRem, which returns the whole
-     * number, and the remainder) - it implements food division.
-     */
+    /// Divides the sdk.Dec number with sdk.Int number and returns sdk.Dec number
+    /// but only the truncated part (unlike the QuoRem, which returns the whole
+    /// number, and the remainder) - it implements food division.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> quoInt({ error: false, value: 123_300000_000000_000019 },
+    ///               5_000000_000000_000000)
+    ///    { error: false, value: 24 }
+    /// ```
     pure def quoInt(x: Dec, y: int): Dec = {
         if (x.error) {
             // propagate the error
@@ -199,9 +249,14 @@ module decimal {
         }
     }
 
-    /**
-     * Quotient of dividing x by y, rounded up.
-     */
+    /// Quotient of dividing x by y.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> quo({ error: false, value: 123_300000_000000_000019 },
+    ///            { error: false, value: 5_000000_000000_000000 })
+    ///    { error: false, value: 24660000000000000004 }
+    /// ```
     pure def quo(x: Dec, y: Dec): Dec = {
         if (x.error) {
             x
@@ -210,15 +265,20 @@ module decimal {
         } else if (y.value == 0) {
             { error: true, value: 0 }
         } else {
-            pure val quoX = (x.value * ONE * ONE) / y.value
-            pure val chopped = chopPrecisionAndRound({ error: false, value: quoX })
-            { ...chopped, error: not(isBitLenOk(chopped.value)) }
+            pure val quoX: int = (x.value * ONE * ONE) / y.value
+            pure val chopped: int = chopPrecisionAndRound(quoX)
+            { error: not(isBitLenOk(chopped)), value: chopped }
         }
     }
 
-    /**
-     * Quotient of dividing x by y, truncated.
-     */
+    /// Quotient of dividing x by y, truncated.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> quoTruncate({ error: false, value: 123_300000_000000_000019 },
+    ///                    { error: false, value: 5_000000_000000_000000 })
+    ///    { error: false, value: 24660000000000000003 }
+    /// ```
     pure def quoTruncate(x: Dec, y: Dec): Dec = {
         if (x.error) {
             x
@@ -227,20 +287,45 @@ module decimal {
         } else if (y.value == 0) {
             { error: true, value: 0 }
         } else {
-            pure val quoX = (x.value * ONE * ONE) / y.value
-            pure val chopped = quoX / ONE
+            pure val quoX: int = (x.value * ONE * ONE) / y.value
+            // chopPrecisionAndTruncate
+            pure val chopped: int = quoX / ONE
             { error: not(isBitLenOk(chopped)), value: chopped }
         }
     }
 
-    /**
-     * Quotient of dividing x by y, rounded up.
-     */
-    pure def quoRoundup(x: Dec, y: Dec): Dec = x.quo(y)
+    /// Quotient of dividing x by y, rounded up.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> quoRoundup({ error: false, value: 123_300000_000000_000019 },
+    ///            { error: false, value: 5_000000_000000_000000 })
+    ///    { error: false, value: 24660000000000000004 }
+     /// ```
+    pure def quoRoundup(x: Dec, y: Dec): Dec = {
+        if (x.error) {
+            x
+        } else if (y.error) {
+            y
+        } else if (y.value == 0) {
+            { error: true, value: 0 }
+        } else {
+            pure val quoX: int = (x.value * ONE * ONE) / y.value
+            pure val chopped: int = chopPrecisionAndRoundUp(quoX)
+            { error: not(isBitLenOk(chopped)), value: chopped }
+        }
+    }
 
-    /**
-     * Decimal multiplication.
-     */
+    /// Decimal multiplication: x is precisely multiplied by y,
+    /// then the last 18 digits after '.' are removed by rounding
+    /// to the even number at half.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> mul({ error: false, value: 123_300000_000000_000000 },
+    ///            { error: false, value: 5_000000_000000_000000 })
+    ///    { error: false, value: 616500000000000000000 }
+    /// ```
     pure def mul(x: Dec, y: Dec): Dec = {
         if (x.error) {
             x
@@ -249,41 +334,57 @@ module decimal {
         } else {
             // the perfect math product of two integers, which we have to round
             pure val mathProd: int = x.value * y.value
-            pure val chopped: Dec =
-                chopPrecisionAndRound({ error: false, value: mathProd })
+            pure val chopped: int = chopPrecisionAndRound(mathProd)
             // equivalent to absResult.BitLen() > maxDecBitLen of Golang
-            { error: not(isBitLenOk(chopped.value)), value: chopped.value }
+            { error: not(isBitLenOk(chopped)), value: chopped }
         }
     }
 
-    /**
-     * Multiplication truncated.
-     */
+    /// Multiplicate x by y and truncate the excess digits, that is,
+    /// over 18 digits to the right of '.'.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> mulTruncate({ error: false, value: 123_300000_000000_000000 },
+    ///                     { error: false, value: 5_000000_000000_000000 })
+    ///    { error: false, value: 616500000000000000000 }
+    /// ```
     pure def mulTruncate(x: Dec, y: Dec): Dec = {
-        pure val chopped = x.mul(y).quoInt(ONE)
-        { error: not(isBitLenOk(chopped.value)), value: chopped.value }
+        pure val mathProd: int = x.value * y.value
+        // chopPrecisionAndTruncate
+        pure val chopped: int = mathProd / ONE
+        { error: not(isBitLenOk(chopped)), value: chopped }
     }
 
-    /**
-     * Multiply a decimal x by an integer i.
-     */
+    /// Multiply a decimal x by a big integer i.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> mulInt({ error: false, value: 123_300000_000000_000000 }, 5)
+    ///    { error: false, value: 616500000000000000000 }
+    /// ```
     pure def mulInt(x: Dec, i: int): Dec = {
-        mul(x, { error: false, value: i })
+        pure def prod = x.value * i
+        { error: not(isBitLenOk(prod)), value: prod }
     }
 
-    /**
-     * Remove a PRECISION amount of rightmost digits and perform bankers rounding
-     * on the remainder (gaussian rounding) on the digits which have been removed.
-     */
-    pure def chopPrecisionAndRound(x: Dec): Dec = {
-        if (x.error) {
-            x // propagate the error
+    /// Remove a PRECISION amount of rightmost digits and perform bankers rounding
+    ///  on the remainder (gaussian rounding) on the digits which have been removed.
+    /// 
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> chopPrecisionAndRound(123_000000_000000_000000)
+    ///    123
+    /// ```
+    pure def chopPrecisionAndRound(x: int): int = {
+        pure val absX: int = abs(x)
+        // the integer part, that is, the digits to the left of '.'
+        pure val quoX: int = absX / ONE
+        // the fractional part, that is, the digits to the right of '.'
+        pure val remX: int = absX % ONE
+        if (remX == 0) {
+            if (x >= 0) quoX else -quoX
         } else {
-            pure val absX: int = abs(x.value)
-            // the integer part, that is, the digits to the left of '.'
-            pure val quoX: int = absX / ONE
-            // the fractional part, that is, the digits to the right of '.'
-            pure val remX: int = absX % ONE
             pure val absResult: int =
                 // when at half precisely, use bankers rounding:
                 // round up to the even number
@@ -292,17 +393,46 @@ module decimal {
                 } else {
                     quoX + 1
                 }
-            {
-                error: false,
-                value: if (x.value >= 0) absResult else -absResult
+            if (x >= 0) absResult else -absResult
+        }
+}
+
+    /// Remove a PRECISION amount of rightmost digits and perform bankers rounding
+    ///  on the remainder (gaussian rounding) on the digits which have been removed.
+    /// 
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> chopPrecisionAndRoundUp({ error: false, value: 123_000000_000000_000017 })
+    ///    124
+    ///    >>> chopPrecisionAndRoundUp({ error: false, value: -123_000000_000000_000017 })
+    ///    -123
+     /// ```
+    pure def chopPrecisionAndRoundUp(x: int): int = {
+        pure val absX: int = abs(x)
+        if (x < 0) {
+            // A negative number is getting rounded to 0, chopPrecisionAndTruncate
+            -(absX / ONE)
+        } else {
+            // the integer part, that is, the digits to the left of '.'
+            pure val quoX: int = absX / ONE
+            // the fractional part, that is, the digits to the right of '.'
+            pure val remX: int = absX % ONE
+            if (remX == 0) {
+                quoX 
+            } else {
+                quoX + 1
             }
         }
     }
 
-    /**
-     * Ceil returns the smallest integer value (as a decimal) that is greater than
-     * or equal to the given decimal.
-     */
+    /// Ceil returns the smallest integer value (as a decimal) that is greater than
+    /// or equal to the given decimal.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> ceil({ error: false, value: 123_300000_000000_000000 })
+    ///    { error: false, value: 124000000000000000000 }
+    /// ```
     pure def ceil(x: Dec): Dec = {
         if (x.error) {
             x
@@ -317,11 +447,44 @@ module decimal {
         }
     }
 
-    /**
-     * RoundInt round the decimal using bankers rounding.
-     */
-    pure def roundInt(x: Dec): Dec = chopPrecisionAndRound(x)
+    /// RoundInt round the decimal using bankers rounding.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> roundInt(123_345000_000000_000000)
+    ///    123
+    /// ```
+    pure def roundInt(x: int): int = chopPrecisionAndRound(x)
 
-    // TODO: power
+    /// Compute `base^degree`, assuming that pow64 is a 64-bit unsigned integer.
+    ///
+    /// ```
+    ///    $ quint -r decimal.qnt::decimal
+    ///    >>> power({ error: false, value: 123_300000_000000_000000 }, 11)
+    ///    { error: false, value: 100136830829095253843725566020536170000000 }
+    /// ```
+    pure def power(base: Dec, degree: int): Dec = {
+        if (degree <= 0) {
+            { error: false, value: 1 }
+        } else {
+            // Since a 64-bit integer can be divided by 2 up to 64 times,
+            // we bound the number of iterations by 64.
+            // We carry three loop variables in a record: d, tmp, and power.
+            pure val loopResult =
+                range(0, 64).foldl({ d: base, tmp: { error: false, value: ONE }, power: degree },
+                (s, i) => {
+                    if (s.power <= 1) {
+                        // the loop has terminated
+                        s
+                    } else {
+                        pure val newTmp = if (s.power % 2 != 0) s.tmp.mul(s.d) else s.tmp
+                        { tmp: newTmp, d: s.d.mul(s.d), power: s.power / 2 }
+                    }
+               }
+            )
+            loopResult.d.mul(loopResult.tmp)
+        }
+    }
+
     // TODO: approxRoot
 }
