@@ -163,7 +163,7 @@ module decimal {
     ///    { error: false, value: 123000000000000000000 }
     /// ```
     pure def newDecFromInt(i: int): Dec = {
-        { error: not(isGoInt(i)), value: i * ONE }
+        { error: not(isSdkInt(i)), value: i * ONE }
     }
 
     /// Construct a decimal from a sdkmath.Int by specifying the number
@@ -181,7 +181,7 @@ module decimal {
     /// ```
     pure def newDecFromIntWithPrec(i: int, prec64: int): Dec = {
         {
-            error: not(isGoInt(i)) or prec64 < 0 or prec64 > PRECISION,
+            error: not(isSdkInt(i)) or prec64 < 0 or prec64 > PRECISION,
             value: i * getMultiplier(prec64)
         }
     }
@@ -397,8 +397,8 @@ module decimal {
         }
 }
 
-    /// Remove a PRECISION amount of rightmost digits and perform bankers rounding
-    ///  on the remainder (gaussian rounding) on the digits which have been removed.
+    /// Remove a PRECISION amount of rightmost digits and round to the smallest larger integer,
+    /// unless the remainder is 0.
     /// 
     /// ```
     ///    $ quint -r decimal.qnt::decimal
@@ -454,7 +454,7 @@ module decimal {
     ///    >>> roundInt(123_345000_000000_000000)
     ///    123
     /// ```
-    pure def roundInt(x: int): int = chopPrecisionAndRound(x)
+    pure def roundInt(x: Dec): int = chopPrecisionAndRound(x.value)
 
     /// Compute `base^degree`, assuming that pow64 is a 64-bit unsigned integer.
     ///

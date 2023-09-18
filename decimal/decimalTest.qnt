@@ -21,15 +21,16 @@ module decimalTest {
         // Try one of the operations.
         // Note that some of the operations are tough arithmetic,
         // which is hard both for humans and constraint solvers.
-        stepCeil,
-        stepRoundInt,
         stepAdd,
         stepSub,
         stepMul,
+        stepMulTruncate,
         stepQuo,
         stepQuoTruncate,
-        stepMulTruncate,
-    }
+        stepQuoRoundup,
+        stepCeil,
+        stepRoundInt,
+     }
 
     // six ways to construct a Dec
     action initNewDec = {
@@ -99,7 +100,8 @@ module decimalTest {
 
     action stepCeil = applyUnary("ceil", ceil)
 
-    action stepRoundInt = applyUnary("roundInt", roundInt)
+    action stepRoundInt =
+        applyUnary("roundInt", (i => { error: false, value: roundInt(i) }))
 
     action stepAdd = applyBinary("add", add)
 
@@ -110,6 +112,8 @@ module decimalTest {
     action stepQuo = applyBinary("quo", quo)
 
     action stepQuoTruncate = applyBinary("quoTruncate", quoTruncate)
+
+    action stepQuoRoundup = applyBinary("quoRoundUp", quoRoundup)
 
     action stepMulTruncate = applyBinary("mulTruncate", mulTruncate)
 
@@ -158,8 +162,8 @@ module decimalTest {
     // Restricted to unary and binary operators, but not constructors,
     // which violate bitLenOkWhenNoError.
     val bitLenOkWhenNoErrorNoCtor = or {
-        not(Set("add", "sub", "mul", "quo", "quoTruncate",
-                "mulTruncate", "ceil", "roundInt")
+        not(Set("add", "sub", "mul", "quo", "quoRoundup",
+                "quoTruncate", "mulTruncate", "ceil", "roundInt")
             .contains(opcode)),
         bitLenOkWhenNoError,
     }
@@ -172,6 +176,7 @@ module decimalTest {
           not(opResult.error),
           opcode == "quo" and opArg2.value == 0,
           opcode == "quoTruncate" and opArg2.value == 0,
+          opcode == "quoRoundup" and opArg2.value == 0,
         }
 
     // TODO: check power
