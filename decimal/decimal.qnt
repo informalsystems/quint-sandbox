@@ -48,8 +48,8 @@ module decimal {
     /// up to 256 bits for the whole part and up to 59/60 bits for the digits
     /// to the right of '.'. This value is used in chopping.
     ///
+    /// In cosmos-sdk v0.46.x (also in v0.45.x-ics-lsm), MAX_DEC_BIT_LEN == 315.
     /// In cosmos-sdk v0.45.1, MAX_DEC_BIT_LEN == 316.
-    /// In cosmos-sdk v0.46.4, MAX_DEC_BIT_LEN == 315.
     pure val MAX_DEC_BIT_LEN = 315
 
     // This is 1.00...00 with PRECISION digits afer '.' represented as an integer
@@ -486,5 +486,74 @@ module decimal {
         }
     }
 
+    /*
+    pure def approxRoot(self: Dec, root: int): (Dec, Dec) = {
+        // when self is negative, approxRoot returns -approxRoot(self) below
+
+        if (self <= 0) {
+            { error: false, value: 1 }
+        } else {
+            // Since a 64-bit integer can be divided by 2 up to 64 times,
+            // we bound the number of iterations by 64.
+            // We carry three loop variables in a record: d, tmp, and power.
+            pure val loopResult =
+                range(0, 64).foldl({ d: base, tmp: { error: false, value: ONE }, power: degree },
+                (s, i) => {
+                    if (s.power <= 1) {
+                        // the loop has terminated
+                        s
+                    } else {
+                        pure val newTmp = if (s.power % 2 != 0) s.tmp.mul(s.d) else s.tmp
+                        { tmp: newTmp, d: s.d.mul(s.d), power: s.power / 2 }
+                    }
+               }
+            )
+            loopResult.d.mul(loopResult.tmp)
+        }
+    }
+    */
+
     // TODO: approxRoot
+    /*
+func (d Dec) ApproxRoot(root uint64) (guess Dec, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			var ok bool
+			err, ok = r.(error)
+			if !ok {
+				err = errors.New("out of bounds")
+			}
+		}
+	}()
+
+	if d.IsNegative() {
+		absRoot, err := d.Neg().ApproxRoot(root)
+		return absRoot.NegMut(), err
+	}
+
+	if root == 1 || d.IsZero() || d.Equal(OneDec()) {
+		return d, nil
+	}
+
+	if root == 0 {
+		return OneDec(), nil
+	}
+
+	guess, delta := OneDec(), OneDec()
+
+	for iter := 0; delta.Abs().GT(SmallestDec()) && iter < maxApproxRootIterations; iter++ {
+		prev := guess.Power(root - 1)
+		if prev.IsZero() {
+			prev = SmallestDec()
+		}
+		delta.Set(d).QuoMut(prev)
+		delta.SubMut(guess)
+		delta.QuoInt64Mut(int64(root))
+
+		guess.AddMut(delta)
+	}
+
+	return guess, nil
+}
+    */
 }
