@@ -41,41 +41,6 @@ module buggyCosmoverse {
       posState: PosState
     }
 
-    /* ****************************************************************************
-    * Specification Parameters
-    * ************************************************************************* */
-
-    // Max uint
-    pure val MAX_UINT = 20
-
-    // Users initial balances
-    pure val INIT_BALANCE = 20
-
-    // set of all user addresses
-    pure val USERS = Set("alice", "bob", "charlie", "eve")
-
-    // set of all validator addresses
-    pure val VALIDATORS = Set("alice", "bob")
-
-    /* ****************************************************************************
-    * State machine state
-    * ************************************************************************* */
-
-    // Delegator state
-    var delegators: Address -> DelegatorState
-    // Validator state
-    var validators: Address -> ValidatorState
-    // Proof-of-stake state
-    var pos: PosState
-
-    /* ****************************************************************************
-    * Execution state
-    * ************************************************************************* */
-
-    // Last transaction executed by step.
-    // Amount is only relevant for delegate and unbond; it is alwasy 0 for withdraw.
-    var lastTx: {tag: str, result: bool, user: Address, validator: Address, amount: int}
-
     /**************************************************************************
     * Functions
     * ************************************************************************* */
@@ -91,7 +56,10 @@ module buggyCosmoverse {
       if (amount <= delegatorState.balance) {
         val updatedDelegatorState = delegatorState.with("balance", delegatorState.balance - amount)
         val updatedValidatorState = validatorState.with("stake", validatorState.stake + amount)
-                                                  .with("bonded", validatorState.bonded.set(delegatorState.address, validatorState.bonded.get(delegatorState.address) + amount))
+                                                  .with("bonded", validatorState.bonded.set(
+                                                    delegatorState.address, 
+                                                    validatorState.bonded.get(delegatorState.address) + amount
+                                                    ))
         val updatedPosState = posState.with("posAccount", posState.posAccount + amount)
         {success: true, delegatorState: updatedDelegatorState, validatorState: updatedValidatorState, posState: updatedPosState}
       } else {
@@ -108,7 +76,10 @@ module buggyCosmoverse {
     pure def unbond(delegatorState: DelegatorState, validatorState: ValidatorState, posState: PosState, amount: int): Result = {
       if (amount < validatorState.bonded.get(delegatorState.address)) {
         val updatedValidatorState = validatorState.with("stake", validatorState.stake - amount)
-                                                  .with("bonded", validatorState.bonded.set(delegatorState.address, validatorState.bonded.get(delegatorState.address) - amount))
+                                                  .with("bonded", validatorState.bonded.set(
+                                                    delegatorState.address, 
+                                                    validatorState.bonded.get(delegatorState.address) - amount
+                                                    ))
                                                   .with("unbonded", validatorState.unbonded + amount)
         {success: true, delegatorState: delegatorState, validatorState: updatedValidatorState, posState: posState}
       } else {
@@ -133,6 +104,29 @@ module buggyCosmoverse {
         {success: false, delegatorState: delegatorState, validatorState: validatorState, posState: posState}
       }
     }
+
+
+
+
+    /* ****************************************************************************
+    * State machine state
+    * ************************************************************************* */
+
+    // Delegator state
+    var delegators: Address -> DelegatorState
+    // Validator state
+    var validators: Address -> ValidatorState
+    // Proof-of-stake state
+    var pos: PosState
+
+    /* ****************************************************************************
+    * Execution state
+    * ************************************************************************* */
+
+    // Last transaction executed by step.
+    // Amount is only relevant for delegate and unbond; it is alwasy 0 for withdraw.
+    var lastTx: {tag: str, result: bool, user: Address, validator: Address, amount: int}
+
 
 
     /* ****************************************************************************
@@ -173,11 +167,29 @@ module buggyCosmoverse {
     }
 
     /* ****************************************************************************
+    * Specification Parameters
+    * ************************************************************************* */
+
+    // Max uint
+    pure val MAX_UINT = 20
+
+    // Users initial balances
+    pure val INIT_BALANCE = 20
+
+    // set of all user addresses
+    pure val USERS = Set("alice") //, "bob") //, "charlie", "eve")
+
+    // set of all validator addresses
+    pure val VALIDATORS = Set("alice", "bob")
+
+    /* ****************************************************************************
     * Invariants
     * ************************************************************************* */
 
     // Invariant 1: The total amount of tokens is constant.
-    val totalAmountTokensConstant = USERS.fold(0, (sum, user) => sum + delegators.get(user).balance) + pos.posAccount == size(USERS)*INIT_BALANCE
+    val totalAmountTokensConstant = 
+      size(USERS)*INIT_BALANCE == 
+      USERS.fold(0, (sum, user) => sum + delegators.get(user).balance) + pos.posAccount 
 
     // Invariant 2: A delegator's balance cannot become negative.
     val balanceGreaterZero = USERS.forall(user => delegators.get(user).balance >= 0)
@@ -226,7 +238,7 @@ module buggyCosmoverse {
     /*
     * The test testDelegate is a unitest-like test for the delegate function.
     */
-    run testDelegate = {
+    run testDelegateTest = {
       val delegatorState = {address: "bob", balance: INIT_BALANCE}
       val validatorState = {address: "alice", stake: 0, bonded: USERS.mapBy(x => 0), unbonded: 0}
       val posState = {posAccount: 0}

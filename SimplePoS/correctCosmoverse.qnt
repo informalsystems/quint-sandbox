@@ -24,7 +24,7 @@ module correctCosmoverse {
     type ValidatorState = {
       address: Address,
       bonded: Address -> int,
-      unbonded: Address -> int,
+      unbonded: Address -> int, // FIX
       stake: int
     }
 
@@ -109,7 +109,7 @@ module correctCosmoverse {
       if (amount < validatorState.bonded.get(delegatorState.address)) {
         val updatedValidatorState = validatorState.with("stake", validatorState.stake - amount)
                                                   .with("bonded", validatorState.bonded.set(delegatorState.address, validatorState.bonded.get(delegatorState.address) - amount))
-                                                  .with("unbonded", validatorState.unbonded.set(delegatorState.address, validatorState.unbonded.get(delegatorState.address) + amount))
+                                                  .with("unbonded", validatorState.unbonded.set(delegatorState.address, validatorState.unbonded.get(delegatorState.address) + amount))  // FIX
         {success: true, delegatorState: delegatorState, validatorState: updatedValidatorState, posState: posState}
       } else {
         {success: false, delegatorState: delegatorState, validatorState: validatorState, posState: posState}
@@ -123,10 +123,10 @@ module correctCosmoverse {
     * 3. Finally, it unlocks the tokens by transferring them from the PoS special account to the user's account.
     */
     pure def withdraw(delegatorState: DelegatorState, validatorState: ValidatorState, posState: PosState): Result = {
-      val amount = validatorState.unbonded.get(delegatorState.address)
+      val amount = validatorState.unbonded.get(delegatorState.address) //FIX
       if (amount > 0) {
         val updatedDelegatorState = delegatorState.with("balance", delegatorState.balance + amount)
-        val updatedValidatorState = validatorState.with("unbonded", validatorState.unbonded.set(delegatorState.address, validatorState.unbonded.get(delegatorState.address) - amount))
+        val updatedValidatorState = validatorState.with("unbonded", validatorState.unbonded.set(delegatorState.address, validatorState.unbonded.get(delegatorState.address) - amount)) //FIX
         val updatedPosState = posState.with("posAccount", posState.posAccount - amount)
         {success: true, delegatorState: updatedDelegatorState, validatorState: updatedValidatorState, posState: updatedPosState}
       } else {
@@ -201,7 +201,7 @@ module correctCosmoverse {
     // State initialization: assumes that users start with some initial balance.
     action init: bool = all {
       delegators' = USERS.mapBy(user => {address: user, balance: INIT_BALANCE}),
-      validators' = VALIDATORS.mapBy(validator => {address: validator, stake: 0, bonded: USERS.mapBy(x => 0), unbonded: USERS.mapBy(x => 0)}),
+      validators' = VALIDATORS.mapBy(validator => {address: validator, stake: 0, bonded: USERS.mapBy(x => 0), unbonded: USERS.mapBy(x => 0)}), //FIX
       pos' = {posAccount: 0},
       lastTx' = { tag: "Init", result: true, user: "", validator:"", amount: 0}
     }
@@ -228,7 +228,7 @@ module correctCosmoverse {
     */
     run testDelegate = {
       val delegatorState = {address: "bob", balance: INIT_BALANCE}
-      val validatorState = {address: "alice", stake: 0, bonded: USERS.mapBy(x => 0), unbonded: USERS.mapBy(x => 0)}
+      val validatorState = {address: "alice", stake: 0, bonded: USERS.mapBy(x => 0), unbonded: USERS.mapBy(x => 0)} //FIX
       val posState = {posAccount: 0}
       nondet amount = 0.to(MAX_UINT).oneOf()
       val result = delegate(delegatorState, validatorState, posState, amount)
@@ -236,7 +236,7 @@ module correctCosmoverse {
         all {
           assert(result.delegatorState.balance == INIT_BALANCE - amount),
           assert(result.validatorState.bonded.get(delegatorState.address) == amount),
-          assert(result.validatorState.unbonded.get(delegatorState.address) == 0),
+          assert(result.validatorState.unbonded.get(delegatorState.address) == 0), //FIX
           assert(result.validatorState.stake == amount),
           assert(result.posState.posAccount == amount)
         }
