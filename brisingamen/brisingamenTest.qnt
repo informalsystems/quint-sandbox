@@ -140,6 +140,14 @@ module brisingamenTest {
     },
   }
 
+  // an action that does not change the state
+  action unchangedAll = all {
+    balances' = balances,
+    contractState' = contractState,
+    userRewards' = userRewards,
+    balancesRewards' = balancesRewards,
+  }
+
   /// The test demonstrates unfair distribution of rewards
   run unfairRewardsTest = {
     initBase
@@ -156,11 +164,27 @@ module brisingamenTest {
             val rewards2 = update_rewards(userRewards.get("USER2"), contractState).pending_rewards
             all {
               assert(rewards1 == rewards2),
-              balances' = balances,
-              contractState' = contractState,
-              userRewards' = userRewards,
-              balancesRewards' = balancesRewards,
+              unchangedAll,
             })
   }
 
+  /// The test demonstrates fair distribution of rewards
+  run fairRewardsTest = {
+    initBase
+        .then(Deposit("USER1", 10_000))
+        .then(Deposit("USER2", 10_000))
+        .then(IncreaseReward("owner", 1000))
+        .then(Withdraw("USER1", 9_999))
+        .then(IncreaseReward("owner", 1000))
+        .then(IncreaseReward("owner", 1000))
+        .then(Deposit("USER1", 9_999))
+        .then(
+            // query updates the rewards
+            val rewards1 = update_rewards(userRewards.get("USER1"), contractState).pending_rewards
+            val rewards2 = update_rewards(userRewards.get("USER2"), contractState).pending_rewards
+            all {
+              assert(rewards1 < rewards2),
+              unchangedAll,
+            })
+  }
 }

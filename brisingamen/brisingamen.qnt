@@ -97,15 +97,15 @@ module brisingamen {
       state: State, sender: Addr, amount: Uint128): Result = {
     // NOTE the caller should have transferred `amount` of tokens (that is, must_pay)
     if (sender != state.owner) {
-      Err("Unauthorized")
+      /* return */ Err("Unauthorized")
     } else if (state.total_staked == 0) {
-      Err("NoUserStake")
+      /* return */ Err("NoUserStake")
     } else {
       val returnState: State = {
         ...state,
         global_index: state.global_index + from_ratio(amount, state.total_staked)
       }
-      Ok(returnState, users)
+      /* return */ Ok(returnState, users)
     }
   }
 
@@ -143,9 +143,9 @@ module brisingamen {
     // NOTE: no check that withdraw does not receive any funds
     pure val user0 = users.get(sender)
     if (amount == 0) {
-      Err("ZeroAmountWithdrawal")
+      /* return */ Err("ZeroAmountWithdrawal")
     } else if (user0.staked_amount < amount) {
-      Err("WithdrawTooMuch")
+      /* return */ Err("WithdrawTooMuch")
     } else {
       pure val user1 = update_rewards(user0, state0)
       pure val user2: UserRewardInfo = {
@@ -158,7 +158,7 @@ module brisingamen {
       }
       // generate a message to send to sender
       pure val bankMsg: BankMsg = {
-        from_address: "contract",
+        from_address: CONTRACT,
         to_address: sender,
         amount: amount
       }
@@ -175,11 +175,11 @@ module brisingamen {
     pure val user1 = update_rewards(user0, state0)
     pure val amount = user1.pending_rewards
     if (amount == 0) {
-      Err("ZeroRewardClaim")
+      /* return */ Err("ZeroRewardClaim")
     } else {
       pure val user2: UserRewardInfo = { ...user1, pending_rewards: 0 }
       pure val bankMsg = {
-        from_address: "contract",
+        from_address: CONTRACT,
         to_address: sender,
         amount: amount
       }
@@ -190,12 +190,12 @@ module brisingamen {
   /// LINK brisingamen/rust/ctf-09/src/contract.rs#update_rewards
   pure def update_rewards(user: UserRewardInfo, state: State): UserRewardInfo = {
     if (user.staked_amount == 0) {
-      user
+      /* return */ user
     } else {
       // calculate pending rewards (note that Dec is converted to Uint128)
       pure val reward =
         (state.global_index - user.user_index) * user.staked_amount / DECIMAL_FRACTIONAL
-      {
+      /* return */ {
         ...user,
         pending_rewards: user.pending_rewards + reward,
         user_index: state.global_index,
