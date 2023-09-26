@@ -177,7 +177,7 @@ module buggyCosmoverse {
     pure val INIT_BALANCE = 20
 
     // set of all user addresses
-    pure val USERS = Set("alice") //, "bob") //, "charlie", "eve")
+    pure val USERS = Set("alice") //, "bob", "charlie", "eve")
 
     // set of all validator addresses
     pure val VALIDATORS = Set("alice", "bob")
@@ -240,7 +240,7 @@ module buggyCosmoverse {
     */
     run testDelegateTest = {
       val delegatorState = {address: "bob", balance: INIT_BALANCE}
-      val validatorState = {address: "alice", stake: 0, bonded: USERS.mapBy(x => 0), unbonded: 0}
+      val validatorState = {address: "alice", stake: 0, bonded: Set("alice", "bob").mapBy(x => 0), unbonded: 0}
       val posState = {posAccount: 0}
       nondet amount = 0.to(MAX_UINT).oneOf()
       val result = delegate(delegatorState, validatorState, posState, amount)
