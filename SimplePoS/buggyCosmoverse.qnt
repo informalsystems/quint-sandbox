@@ -125,7 +125,7 @@ module buggyCosmoverse {
 
     // Last transaction executed by step.
     // Amount is only relevant for delegate and unbond; it is alwasy 0 for withdraw.
-    var lastTx: {tag: str, result: bool, user: Address, validator: Address, amount: int}
+    var _LastTx: {tag: str, result: bool, user: Address, validator: Address, amount: int}
 
 
 
@@ -142,7 +142,7 @@ module buggyCosmoverse {
         delegators' = delegators.set(user, result.delegatorState),
         validators' = validators.set(validator, result.validatorState),
         pos' = result.posState,
-        lastTx' = {tag: "Delegate", result: result.success, user: user, validator: validator, amount: amount}
+        _LastTx' = {tag: "Delegate", result: result.success, user: user, validator: validator, amount: amount}
       }
     }
 
@@ -152,7 +152,7 @@ module buggyCosmoverse {
         delegators' = delegators.set(user, result.delegatorState),
         validators' = validators.set(validator, result.validatorState),
         pos' = result.posState,
-        lastTx' = {tag: "Unbond", result: result.success, user: user, validator: validator, amount: amount}
+        _LastTx' = {tag: "Unbond", result: result.success, user: user, validator: validator, amount: amount}
       }
     }
 
@@ -162,7 +162,7 @@ module buggyCosmoverse {
         delegators' = delegators.set(user, result.delegatorState),
         validators' = validators.set(validator, result.validatorState),
         pos' = result.posState,
-        lastTx' = {tag: "Withdraw", result: result.success, user: user, validator: validator, amount: 0}
+        _LastTx' = {tag: "Withdraw", result: result.success, user: user, validator: validator, amount: 0}
       }
     }
 
@@ -215,7 +215,7 @@ module buggyCosmoverse {
       delegators' = USERS.mapBy(user => {address: user, balance: INIT_BALANCE}),
       validators' = VALIDATORS.mapBy(validator => {address: validator, stake: 0, bonded: USERS.mapBy(x => 0), unbonded: 0}),
       pos' = {posAccount: 0},
-      lastTx' = { tag: "Init", result: true, user: "", validator:"", amount: 0}
+      _LastTx' = { tag: "Init", result: true, user: "", validator:"", amount: 0}
     }
 
     /*
