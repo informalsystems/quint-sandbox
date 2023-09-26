@@ -95,6 +95,7 @@ module brisingamen {
   /// LINK brisingamen/rust/ctf-09/src/contract.rs#increase_reward
   pure def increase_reward(users: Addr -> UserRewardInfo,
       state: State, sender: Addr, amount: Uint128): Result = {
+    // NOTE the caller should have transferred `amount` of tokens (that is, must_pay)
     if (sender != state.owner) {
       Err("Unauthorized")
     } else if (state.total_staked == 0) {
@@ -112,6 +113,7 @@ module brisingamen {
   /// LINK brisingamen/rust/ctf-09/src/contract.rs#deposit
   pure def deposit(users: Addr -> UserRewardInfo,
       state0: State, sender: Addr, amount: Uint128): Result = {
+    // NOTE the caller should have transferred `amount` of tokens (that is, must_pay)
     pure val user0 =
       if (keys(users).contains(sender)) {
         users.get(sender)

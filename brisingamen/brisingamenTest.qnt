@@ -1,4 +1,5 @@
 /// A non-deterministic state machine that we use for testing.
+///
 /// Igor Konnov, Informal Systems, 2023
 module brisingamenTest {
   import brisingamen.* from "./brisingamen"
@@ -48,11 +49,13 @@ module brisingamenTest {
   /// The action to increase the reward
   action IncreaseReward(sender: Addr, amount: Uint128): bool = all {
     balancesRewards.get(sender) >= amount,
+    // transfer `amount` reward tokens to the contract
     balancesRewards' =
       balancesRewards
         .setBy(sender, old => old - amount)
         .setBy(CONTRACT, old => old + amount),
     balances' = balances,
+    // call the contract
     val result = increase_reward(userRewards, contractState, sender, amount)
     all {
       result.error == "",
@@ -64,11 +67,13 @@ module brisingamenTest {
   /// The action to deposit
   action Deposit(sender: Addr, amount: Uint128): bool = all {
     balances.get(sender) >= amount,
+    // transfer `amount` normal tokens to the contract
     balances' =
       balances
         .setBy(sender, old => old - amount)
         .setBy(CONTRACT, old => old + amount),
     balancesRewards' = balancesRewards,
+    // call the contract
     val result = deposit(userRewards, contractState, sender, amount)
     all {
       result.error == "",
@@ -79,12 +84,14 @@ module brisingamenTest {
 
   /// The action to withdraw
   action Withdraw(sender: Addr, amount: Uint128): bool = all {
+    // call the contract
     val result = withdraw(userRewards, contractState, sender, amount)
     all {
       result.error == "",
       contractState' = result.state,
       userRewards' = result.users,
       balancesRewards' = balancesRewards,
+      // transfer normal tokens as prescribed by the contract
       balances' =
         balances
           .setBy(result.bankMsg.from_address, old => old - result.bankMsg.amount)
@@ -94,12 +101,14 @@ module brisingamenTest {
 
   /// The action to claim rewards
   action ClaimRewards(sender: Addr): bool = all {
+    // call the contract
     val result = claim_rewards(userRewards, contractState, sender)
     all {
       result.error == "",
       contractState' = result.state,
       userRewards' = result.users,
       balances' = balances,
+      // transfer reward tokens as prescribed by the contract
       balancesRewards' =
         balancesRewards
           .setBy(result.bankMsg.from_address, old => old - result.bankMsg.amount)
