@@ -3,6 +3,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_storage_plus::{Item, Map};
 
+// ANCHOR[id=State]
 #[cw_serde]
 pub struct State {
     pub owner: Addr,
@@ -10,6 +11,7 @@ pub struct State {
     pub global_index: Decimal,
 }
 
+// ANCHOR[id=UserRewardInfo]
 #[cw_serde]
 pub struct UserRewardInfo {
     pub staked_amount: Uint128,

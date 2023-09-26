@@ -48,6 +48,7 @@ pub fn execute(
 }
 
 /// Entry point for owner to increase reward
+/// ANCHOR[id=increase_reward]
 pub fn increase_reward(
     deps: DepsMut,
     _env: Env,
@@ -76,6 +77,7 @@ pub fn increase_reward(
 }
 
 /// Entry point for users to deposit funds
+/// ANCHOR[id=deposit]
 pub fn deposit(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
     let amount = must_pay(&info, DENOM).map_err(|_| ContractError::NoDenomSent {})?;
 
@@ -105,6 +107,7 @@ pub fn deposit(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractErr
 }
 
 /// Entry point for users to withdraw funds
+/// ANCHOR[id=withdraw]
 pub fn withdraw(
     deps: DepsMut,
     info: MessageInfo,
@@ -145,6 +148,7 @@ pub fn withdraw(
 }
 
 /// Entry point for user to claim rewards
+/// ANCHOR[id=claim_rewards]
 pub fn claim_rewards(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
     let mut user = USERS.load(deps.storage, &info.sender)?;
 
@@ -175,6 +179,7 @@ pub fn claim_rewards(deps: DepsMut, info: MessageInfo) -> Result<Response, Contr
         .add_message(msg))
 }
 
+/// ANCHOR[id=update_rewards]
 pub fn update_rewards(user: &mut UserRewardInfo, state: &State) {
     // no need update amount if zero
     if user.staked_amount.is_zero() {
