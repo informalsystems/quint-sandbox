@@ -24,8 +24,8 @@ module brisingamen {
 
   // our predefined addresses
   pure val CONTRACT = "contract"
-  pure val UNPRIVILIGED = Set("USER", "USER1", "USER2")
-  pure val ADDR = Set("owner", CONTRACT).union(UNPRIVILIGED)
+  pure val UNPRIVILEGED = Set("USER", "USER1", "USER2")
+  pure val ADDR = Set("owner", CONTRACT).union(UNPRIVILEGED)
 
   /// The contract state:
   /// LINK brisingamen/rust/ctf-09/src/state.rs#State

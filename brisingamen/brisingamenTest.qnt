@@ -122,18 +122,18 @@ module brisingamenTest {
     nondet amount = 0.to(balancesRewards.get(sender)).oneOf()
     IncreaseReward(sender, amount),
     //-
-    nondet sender = UNPRIVILIGED.oneOf()
+    nondet sender = UNPRIVILEGED.oneOf()
     nondet amount = 0.to(balances.get(sender)).oneOf()
     Deposit(sender, amount),
     //-
-    nondet sender = UNPRIVILIGED.oneOf()
+    nondet sender = UNPRIVILEGED.oneOf()
     nondet amount = 0.to(balances.get(sender)).oneOf()
     all {
       sender.in(keys(userRewards)),
       Withdraw(sender, amount),
     },
     //-
-    nondet sender = UNPRIVILIGED.oneOf()
+    nondet sender = UNPRIVILEGED.oneOf()
     all {
       sender.in(keys(userRewards)),
       ClaimRewards(sender),
@@ -151,22 +151,30 @@ module brisingamenTest {
   /// The test demonstrates unfair distribution of rewards
   run unfairRewardsTest = {
     initBase
-        .then(Deposit("USER1", 10_000))
-        .then(Deposit("USER2", 10_000))
-        .then(IncreaseReward("owner", 1000))
-        .then(Withdraw("USER1", 10_000))
-        .then(IncreaseReward("owner", 1000))
-        .then(IncreaseReward("owner", 1000))
-        .then(Deposit("USER1", 10_000))
-        .then(
-            // query updates the rewards
-            val rewards1 = update_rewards(userRewards.get("USER1"), contractState).pending_rewards
-            val rewards2 = update_rewards(userRewards.get("USER2"), contractState).pending_rewards
-            all {
-              assert(rewards1 == rewards2),
-              unchangedAll,
-            })
+      .then(Deposit("USER1", 10_000))
+      .then(Deposit("USER2", 10_000))
+      .then(IncreaseReward("owner", 1000))
+      .then(Withdraw("USER1", 10_000))
+      .then(IncreaseReward("owner", 1000))
+      .then(IncreaseReward("owner", 1000))
+      .then(Deposit("USER1", 10_000))
+      .then(
+        // query updates the rewards
+        val rewards1 =
+          update_rewards(userRewards.get("USER1"), contractState).pending_rewards
+        val rewards2 =
+          update_rewards(userRewards.get("USER2"), contractState).pending_rewards
+        all {
+          assert(rewards1 == rewards2),
+          unchangedAll,
+        })
   }
+
+  /// a state invariant that checks whether all balances are non-negative
+  val noNegativeBalancesInv = ADDR.forall(a => balances.get(a) >= 0)
+
+  /// a state invariant that checks whether all rewards are non-negative
+  val noNegativeRewardsInv = ADDR.forall(a => balancesRewards.get(a) >= 0)
 
   /// The test demonstrates fair distribution of rewards
   run fairRewardsTest = {
