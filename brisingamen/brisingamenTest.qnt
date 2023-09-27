@@ -1,3 +1,4 @@
+// -*- mode: Bluespec; -*-
 /// A non-deterministic state machine that we use for testing.
 ///
 /// Igor Konnov, Informal Systems, 2023
