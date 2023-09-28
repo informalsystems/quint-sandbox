@@ -47,24 +47,6 @@ module brisingamenTest {
     }
   }
 
-  /// The action to increase the reward
-  action IncreaseReward(sender: Addr, amount: Uint128): bool = all {
-    balancesRewards.get(sender) >= amount,
-    // transfer `amount` reward tokens to the contract
-    balancesRewards' =
-      balancesRewards
-        .setBy(sender, old => old - amount)
-        .setBy(CONTRACT, old => old + amount),
-    balances' = balances,
-    // call the contract
-    val result = increase_reward(userRewards, contractState, sender, amount)
-    all {
-      result.error == "",
-      contractState' = result.state,
-      userRewards' = result.users,
-    }
-  }
-
   /// The action to deposit
   action Deposit(sender: Addr, amount: Uint128): bool = all {
     balances.get(sender) >= amount,
@@ -100,6 +82,24 @@ module brisingamenTest {
     }
   }
 
+  /// The action to increase the reward
+  action IncreaseReward(sender: Addr, amount: Uint128): bool = all {
+    balancesRewards.get(sender) >= amount,
+    // transfer `amount` reward tokens to the contract
+    balancesRewards' =
+      balancesRewards
+        .setBy(sender, old => old - amount)
+        .setBy(CONTRACT, old => old + amount),
+    balances' = balances,
+    // call the contract
+    val result = increase_reward(userRewards, contractState, sender, amount)
+    all {
+      result.error == "",
+      contractState' = result.state,
+      userRewards' = result.users,
+    }
+  }
+
   /// The action to claim rewards
   action ClaimRewards(sender: Addr): bool = all {
     // call the contract
@@ -119,21 +119,21 @@ module brisingamenTest {
 
   /// a step that chooses some inputs non-deterministically 
   action step = any {
-    val sender = "owner"
-    nondet amount = 0.to(balancesRewards.get(sender)).oneOf()
-    IncreaseReward(sender, amount),
-    //-
     nondet sender = UNPRIVILEGED.oneOf()
     nondet amount = 0.to(balances.get(sender)).oneOf()
     Deposit(sender, amount),
-    //-
+    // ----
     nondet sender = UNPRIVILEGED.oneOf()
     nondet amount = 0.to(balances.get(sender)).oneOf()
     all {
       sender.in(keys(userRewards)),
       Withdraw(sender, amount),
     },
-    //-
+    // ----
+    val sender = "owner"
+    nondet amount = 0.to(balancesRewards.get(sender)).oneOf()
+    IncreaseReward(sender, amount),
+    // ----
     nondet sender = UNPRIVILEGED.oneOf()
     all {
       sender.in(keys(userRewards)),
@@ -148,6 +148,19 @@ module brisingamenTest {
     userRewards' = userRewards,
     balancesRewards' = balancesRewards,
   }
+
+  /// a state invariant that checks whether all balances are non-negative
+  val noNegativeBalancesInv = ADDR.forall(a => balances.get(a) >= 0)
+
+  /// a state invariant that checks whether all rewards are non-negative
+  val noNegativeRewardsInv = ADDR.forall(a => balancesRewards.get(a) >= 0)
+
+  // ensure that rewards coins are not burnt
+  val noBurntRewardsInv =
+    // total rewards
+    val total = ADDR.fold(0, (sum, a) => balancesRewards.get(a) + sum)
+    // total rewards should be equal to the initial rewards
+    total == 100_000
 
   /// The test demonstrates unfair distribution of rewards
   run unfairRewardsTest = {
@@ -170,12 +183,6 @@ module brisingamenTest {
           unchangedAll,
         })
   }
-
-  /// a state invariant that checks whether all balances are non-negative
-  val noNegativeBalancesInv = ADDR.forall(a => balances.get(a) >= 0)
-
-  /// a state invariant that checks whether all rewards are non-negative
-  val noNegativeRewardsInv = ADDR.forall(a => balancesRewards.get(a) >= 0)
 
   /// The test demonstrates fair distribution of rewards
   run fairRewardsTest = {

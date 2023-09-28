@@ -1,4 +1,3 @@
-// -*- mode: Bluespec; -*-
 /// A specification of the Challenge 09: Brisingamen.
 ///
 /// https://github.com/oak-security/cosmwasm-ctf/tree/main/ctf-09
