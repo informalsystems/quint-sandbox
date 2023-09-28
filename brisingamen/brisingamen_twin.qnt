@@ -1,9 +1,8 @@
-/// A specification of the Challenge 09: Brisingamen.
-///
-/// https://github.com/oak-security/cosmwasm-ctf/tree/main/ctf-09
+/// A mutated version of brisingamen.qnt, to figure out the behavior.
+/// To see the changes, do: diff brisingamen.qnt brisingamen_twin.qnt
 ///
 /// Igor Konnov, Informal Systems, 2023
-module brisingamen {
+module brisingamen_twin {
   /// addresses
   type Addr = str
   /// 128-bit integers
@@ -189,9 +188,11 @@ module brisingamen {
 
   /// LINK brisingamen/rust/ctf-09/src/contract.rs#update_rewards
   pure def update_rewards(user: UserRewardInfo, state: State): UserRewardInfo = {
-    if (user.staked_amount == 0) {
-      /* return */ user
-    } else {
+    // We do not understand what the condition below is doing.
+    // Hence, we comment it out and compare to the original spec.
+    //if (user.staked_amount == 0) {
+    //  /* return */ user
+    //} else {
       // Calculate pending rewards.
       // Note that Decimal is converted to Uint128, hence the division:
       // https://docs.rs/cosmwasm-std/latest/src/cosmwasm_std/math/decimal.rs.html#650
@@ -202,6 +203,6 @@ module brisingamen {
         pending_rewards: user.pending_rewards + reward,
         user_index: state.global_index,
       }
-    }
+    //}
   }
 }
