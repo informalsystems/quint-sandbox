@@ -2,4 +2,5 @@
     "liveshare.guestApprovalRequired": true,
     "liveshare.shareExternalFiles": false,
     "liveshare.autoShareServers": false,
+    "rust-analyzer.linkedProjects": [ "./brisingamen/rust/ctf-09/Cargo.toml" ]
 }
