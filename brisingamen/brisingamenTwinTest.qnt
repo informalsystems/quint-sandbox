@@ -33,7 +33,7 @@ module brisingamenTwinTest {
       global_index: 0,
       total_staked: 0,
     }
-    pure val userRewards0 = Set().mapBy(a => contract::nullUser)
+    pure val userRewards0: Addr -> UserRewardInfo = Set().mapBy(a => contract::nullUser)
     pure val contractResult1 = contract::deposit(userRewards0, state0, "USER", 10_000)
     pure val contractResult2 = contract::increase_reward(contractResult1.users, contractResult1.state, "owner", 10_000)
     pure val twinResult1 = twin::deposit(userRewards0, state0, "USER", 10_000)
