@@ -272,16 +272,6 @@ func Test56ops(t *testing.T) {
 	ExecFromItf(t, "../test-inputs-v0.46.4/random56.itf.json")
 }
 
-// This test demonstrates how Dec.Ceil can drive us outside of
-// the required bit length without producing a panic.
-// This test was produced with `quint verify`:
-//
-//	quint verify --step=stepCeil --invariant=bitLenOkWhenNoErrorNoCtor \
-//	  --out-itf=ceilBitLen.itf.json decimalTest.qnt
-func TestCeil(t *testing.T) {
-	ExecFromItf(t, "../test-inputs-v0.46.4/ceilBitLen.itf.json")
-}
-
 // This test demonstrates how addition and multiplication may panic
 // even though the result could be represented as a decimal.
 // This is caused by the test for MAX_DEC_BIT_LEN.

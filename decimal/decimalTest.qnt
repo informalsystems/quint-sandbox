@@ -28,8 +28,8 @@ module decimalTest {
         stepQuo,
         stepQuoTruncate,
         stepQuoRoundup,
-        stepCeil,
         stepRoundInt,
+        stepCeil,
      }
 
     // six ways to construct a Dec
