@@ -2,7 +2,7 @@
 /// To see the changes, do: diff brisingamen.qnt brisingamen_twin.qnt
 ///
 /// Igor Konnov, Informal Systems, 2023
-module brisingamen_twin {
+module brisingamenTwin {
   import cosmwasm.* from "./cosmwasm"
 
   // our predefined addresses

@@ -3,6 +3,7 @@
 ///
 /// Igor Konnov, Informal Systems, 2023
 module brisingamenTest {
+  import cosmwasm.* from "./cosmwasm"
   import brisingamen.* from "./brisingamen"
 
   var balances: Addr -> int

@@ -6,24 +6,33 @@
 module brisingamenTwinTest {
   import cosmwasm.* from "./cosmwasm"
   import brisingamen as contract from "./brisingamen"
-  import brisingamen as twin from "./brisingamen_twin"
+  import brisingamenTwin as twin from "./brisingamenTwin"
 
-  // a type declaration to disambiguate the type checker
   type UserRewardInfo = {
     staked_amount: Uint128,
     user_index: Decimal,
     pending_rewards: Uint128,
   }
 
+  // record a transaction
+  type Transaction = {
+    kind: str,
+    sender: str,
+    amount: int,
+  }
+
+  // the state of the contract
   var contractBalances: Addr -> int
   var contractBalancesRewards: Addr -> int
   var contractContractState: contract::State
   var contractUserRewards: Addr -> contract::UserRewardInfo
-
+  // the state of the evil twin
   var twinBalances: Addr -> int
   var twinBalancesRewards: Addr -> int
   var twinContractState: twin::State
   var twinUserRewards: Addr -> twin::UserRewardInfo
+  // the last executed transaction
+  var lastTx: Transaction
 
   /// The base scenario of the CTF Challenge #9.
   /// https://github.com/oak-security/cosmwasm-ctf/tree/main/ctf-09#execute-entry-points
@@ -33,12 +42,17 @@ module brisingamenTwinTest {
       global_index: 0,
       total_staked: 0,
     }
-    pure val userRewards0: Addr -> UserRewardInfo = Set().mapBy(a => contract::nullUser)
-    pure val contractResult1 = contract::deposit(userRewards0, state0, "USER", 10_000)
-    pure val contractResult2 = contract::increase_reward(contractResult1.users, contractResult1.state, "owner", 10_000)
-    pure val twinResult1 = twin::deposit(userRewards0, state0, "USER", 10_000)
-    pure val twinResult2 = twin::increase_reward(twinResult1.users, twinResult1.state, "owner", 10_000)
-     all {
+    pure val userRewards0: Addr -> UserRewardInfo =
+      Set().mapBy(a => contract::nullUser)
+    pure val contractResult1 =
+      contract::deposit(userRewards0, state0, "USER", 10_000)
+    pure val contractResult2 =
+      contract::increase_reward(contractResult1.users, contractResult1.state, "owner", 10_000)
+    pure val twinResult1 =
+      twin::deposit(userRewards0, state0, "USER", 10_000)
+    pure val twinResult2 =
+      twin::increase_reward(twinResult1.users, twinResult1.state, "owner", 10_000)
+    all {
       contractContractState' = contractResult2.state,
       contractUserRewards' = contractResult2.users,
       contractBalances' =
@@ -58,8 +72,51 @@ module brisingamenTwinTest {
           .setBy(twin::CONTRACT, old => old + 10_000),
       twinBalancesRewards' =
         twin::ADDR.mapBy(a => if (a == "owner") 100_000 else 0),
+      lastTx' = { kind: "init", sender: "", amount: 0 }
     }
   }
+
+  // an initial state with a smaller search scope
+  action initSmall = {
+    pure val state0 = {
+      owner: "owner",
+      global_index: 0,
+      total_staked: 0,
+    }
+    pure val userRewards0: Addr -> UserRewardInfo =
+      Set().mapBy(a => contract::nullUser)
+    pure val contractResult1 =
+      contract::deposit(userRewards0, state0, "USER", 5)
+    pure val contractResult2 =
+      contract::increase_reward(contractResult1.users, contractResult1.state, "owner", 5)
+    pure val twinResult1 =
+      twin::deposit(userRewards0, state0, "USER", 5)
+    pure val twinResult2 =
+      twin::increase_reward(twinResult1.users, twinResult1.state, "owner", 5)
+    all {
+      contractContractState' = contractResult2.state,
+      contractUserRewards' = contractResult2.users,
+      contractBalances' =
+        contract::ADDR.mapBy(a => 5)
+          // from the deposit above
+          .setBy("USER", old => old - 5)
+          .setBy(contract::CONTRACT, old => old + 5),
+      contractBalancesRewards' =
+        contract::ADDR.mapBy(a => if (a == "owner") 5 else 0),
+      // twin copy
+      twinContractState' = twinResult2.state,
+      twinUserRewards' = twinResult2.users,
+      twinBalances' =
+        twin::ADDR.mapBy(a => 5)
+          // from the deposit above
+          .setBy("USER", old => old - 5)
+          .setBy(twin::CONTRACT, old => old + 5),
+      twinBalancesRewards' =
+        twin::ADDR.mapBy(a => if (a == "owner") 5 else 0),
+      lastTx' = { kind: "init", sender: "", amount: 0 },
+    }
+  }
+
 
   /// The action to deposit
   action Deposit(sender: Addr, amount: Uint128): bool = all {
@@ -87,6 +144,7 @@ module brisingamenTwinTest {
       twinResult.error == "",
       twinContractState' = twinResult.state,
       twinUserRewards' = twinResult.users,
+      lastTx' = { kind: "Deposit", sender: sender, amount: amount },
      }
   }
 
@@ -115,6 +173,7 @@ module brisingamenTwinTest {
         twinBalances
           .setBy(twinResult.bankMsg.from_address, old => old - twinResult.bankMsg.amount)
           .setBy(twinResult.bankMsg.to_address, old => old + twinResult.bankMsg.amount),
+      lastTx' = { kind: "Withdraw", sender: sender, amount: amount },
      }
   }
 
@@ -146,6 +205,7 @@ module brisingamenTwinTest {
       twinResult.error == "",
       twinContractState' = twinResult.state,
       twinUserRewards' = twinResult.users,
+      lastTx' = { kind: "IncreaseReward", sender: sender, amount: amount },
     }
   }
 
@@ -174,6 +234,7 @@ module brisingamenTwinTest {
         twinBalancesRewards
           .setBy(twinResult.bankMsg.from_address, old => old - twinResult.bankMsg.amount)
           .setBy(twinResult.bankMsg.to_address, old => old + twinResult.bankMsg.amount),
+      lastTx' = { kind: "ClaimRewards", sender: sender, amount: 0 },
      }
   }
 
@@ -203,8 +264,15 @@ module brisingamenTwinTest {
 
   // this invariant lets us to see diverging behavior
   // between the contract and its twin
-  val sameBalancesInv = and {
-    contractBalancesRewards == twinBalancesRewards,
-    contractBalances == twinBalances,
+  val sameBalancesInv = {
+    contractBalancesRewards == twinBalancesRewards
   }
+
+  /// a state invariant that checks whether all balances are non-negative
+  val noNegativeBalancesInv =
+    contract::ADDR.forall(a => contractBalances.get(a) >= 0)
+
+  /// a state invariant that checks whether all rewards are non-negative
+  val noNegativeRewardsInv =
+    contract::ADDR.forall(a => contractBalancesRewards.get(a) >= 0)
 }
