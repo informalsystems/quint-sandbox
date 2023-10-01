@@ -3,7 +3,7 @@
  * https://solodit.xyz/issues/m-03-error-in-allowance-logic-code4rena-swivel-swivel-v3-contest-git
  *
  * This is a very simplified version of the original protocol.
- * Its purpose is to illustrate how this issue could be understood by using Quint.
+ * Its purpose is to illustrate how this issue could be understood when using Quint.
  */
 module challenge2 {
   // our addresses are simply strings
@@ -27,9 +27,11 @@ module challenge2 {
   }
 
   // produce the result on error/revert
-  pure def revert(input: ContractState, error: str): Result = { output: input, error: error }
+  pure def revert(input: ContractState, error: str): Result =
+    { output: input, error: error }
   // produce the result on no error
-  pure def ok(output: ContractState): Result = { output: output, error: "" }
+  pure def ok(output: ContractState): Result =
+    { output: output, error: "" }
 
   // a simplified version of 'withdraw'
   pure def withdraw(input: ContractState, sender: Address,
@@ -42,7 +44,7 @@ module challenge2 {
         revert(input, "not approved")
       } else {
         if (allowed - amount < 0) {
-          // the underflow check: Solidity does it automatically, Quint does not
+          // the underflow check: Solidity does it automatically, Quint does not.
           // allowance[holder][msg.sender] -= amount;
           revert(input, "underflow")
         } else {
