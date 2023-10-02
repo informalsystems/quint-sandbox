@@ -1,3 +1,4 @@
+// -*- mode: Bluespec; -*-
 /// A mutated version of brisingamen.qnt, to figure out the behavior.
 /// To see the changes, do: diff brisingamen.qnt brisingamen_twin.qnt
 ///
