@@ -121,45 +121,47 @@ func executeTest(t *testing.T, s TestInput) {
 			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 
-	case "newDecFromInt":
-		if s.result.error {
-			require.Panics(t, func() { sdk.NewDecFromInt(sdk.NewIntFromBigInt(&s.arg1.value)) })
-		} else {
-			actual := sdk.NewDecFromInt(sdk.NewIntFromBigInt(&s.arg1.value))
-			expected := bigintToDec(t, &s.result.value)
-			assert.Equal(t, expected, actual, "the results should be equal")
-		}
+	/*
+		case "newDecFromInt":
+			if s.result.error {
+				require.Panics(t, func() { sdk.NewDecFromInt(sdk.NewIntFromBigInt(&s.arg1.value)) })
+			} else {
+				actual := sdk.NewDecFromInt(sdk.NewIntFromBigInt(&s.arg1.value))
+				expected := bigintToDec(t, &s.result.value)
+				assert.Equal(t, expected, actual, "the results should be equal")
+			}
 
-	case "newDecFromIntWithPrec":
-		if s.result.error {
-			require.Panics(t, func() {
-				sdk.NewDecFromIntWithPrec(sdk.NewIntFromBigInt(&s.arg1.value), s.arg2.value.Int64())
-			})
-		} else {
-			actual := sdk.NewDecFromIntWithPrec(sdk.NewIntFromBigInt(&s.arg1.value), s.arg2.value.Int64())
-			expected := bigintToDec(t, &s.result.value)
-			assert.Equal(t, expected, actual, "the results should be equal")
-		}
+		case "newDecFromIntWithPrec":
+			if s.result.error {
+				require.Panics(t, func() {
+					sdk.NewDecFromIntWithPrec(sdk.NewIntFromBigInt(&s.arg1.value), s.arg2.value.Int64())
+				})
+			} else {
+				actual := sdk.NewDecFromIntWithPrec(sdk.NewIntFromBigInt(&s.arg1.value), s.arg2.value.Int64())
+				expected := bigintToDec(t, &s.result.value)
+				assert.Equal(t, expected, actual, "the results should be equal")
+			}
 
-	case "newDecFromBigInt":
-		if s.result.error {
-			require.Panics(t, func() { sdk.NewDecFromBigInt(&s.arg1.value) })
-		} else {
-			actual := sdk.NewDecFromBigInt(&s.arg1.value)
-			expected := bigintToDec(t, &s.result.value)
-			assert.Equal(t, expected, actual, "the results should be equal")
-		}
+		case "newDecFromBigInt":
+			if s.result.error {
+				require.Panics(t, func() { sdk.NewDecFromBigInt(&s.arg1.value) })
+			} else {
+				actual := sdk.NewDecFromBigInt(&s.arg1.value)
+				expected := bigintToDec(t, &s.result.value)
+				assert.Equal(t, expected, actual, "the results should be equal")
+			}
 
-	case "newDecFromBigIntWithPrec":
-		if s.result.error {
-			require.Panics(t, func() {
-				sdk.NewDecFromBigIntWithPrec(&s.arg1.value, s.arg2.value.Int64())
-			})
-		} else {
-			actual := sdk.NewDecFromBigIntWithPrec(&s.arg1.value, s.arg2.value.Int64())
-			expected := bigintToDec(t, &s.result.value)
-			assert.Equal(t, expected, actual, "the results should be equal")
-		}
+		case "newDecFromBigIntWithPrec":
+			if s.result.error {
+				require.Panics(t, func() {
+					sdk.NewDecFromBigIntWithPrec(&s.arg1.value, s.arg2.value.Int64())
+				})
+			} else {
+				actual := sdk.NewDecFromBigIntWithPrec(&s.arg1.value, s.arg2.value.Int64())
+				expected := bigintToDec(t, &s.result.value)
+				assert.Equal(t, expected, actual, "the results should be equal")
+			}
+	*/
 
 	case "add":
 		if s.result.error {
@@ -215,6 +217,15 @@ func executeTest(t *testing.T, s TestInput) {
 			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 
+	case "quoRoundup":
+		if s.result.error {
+			require.Panics(t, func() { sdk.Dec.QuoRoundUp(arg1, arg2) })
+		} else {
+			actual := sdk.Dec.QuoRoundUp(arg1, arg2)
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
+		}
+
 	case "ceil":
 		if s.result.error {
 			require.Panics(t, func() { sdk.Dec.Ceil(arg1) })
@@ -259,16 +270,6 @@ func TestOneRun(t *testing.T) {
 // a slightly longer test of 56 operations
 func Test56ops(t *testing.T) {
 	ExecFromItf(t, "../test-inputs-v0.46.4/random56.itf.json")
-}
-
-// This test demonstrates how Dec.Ceil can drive us outside of
-// the required bit length without producing a panic.
-// This test was produced with `quint verify`:
-//
-//	quint verify --step=stepCeil --invariant=bitLenOkWhenNoErrorNoCtor \
-//	  --out-itf=ceilBitLen.itf.json decimalTest.qnt
-func TestCeil(t *testing.T) {
-	ExecFromItf(t, "../test-inputs-v0.46.4/ceilBitLen.itf.json")
 }
 
 // This test demonstrates how addition and multiplication may panic

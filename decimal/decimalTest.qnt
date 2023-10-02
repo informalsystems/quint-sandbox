@@ -21,15 +21,16 @@ module decimalTest {
         // Try one of the operations.
         // Note that some of the operations are tough arithmetic,
         // which is hard both for humans and constraint solvers.
-        stepCeil,
-        stepRoundInt,
         stepAdd,
         stepSub,
         stepMul,
+        stepMulTruncate,
         stepQuo,
         stepQuoTruncate,
-        stepMulTruncate,
-    }
+        stepQuoRoundup,
+        stepRoundInt,
+        stepCeil,
+     }
 
     // six ways to construct a Dec
     action initNewDec = {
@@ -99,7 +100,8 @@ module decimalTest {
 
     action stepCeil = applyUnary("ceil", ceil)
 
-    action stepRoundInt = applyUnary("roundInt", roundInt)
+    action stepRoundInt =
+        applyUnary("roundInt", (i => { error: false, value: roundInt(i) }))
 
     action stepAdd = applyBinary("add", add)
 
@@ -111,7 +113,23 @@ module decimalTest {
 
     action stepQuoTruncate = applyBinary("quoTruncate", quoTruncate)
 
+    action stepQuoRoundup = applyBinary("quoRoundUp", quoRoundup)
+
     action stepMulTruncate = applyBinary("mulTruncate", mulTruncate)
+
+    action stepPower = {
+        nondet whole1 = (-2^256 + 1).to(2^256 - 1).oneOf()
+        nondet frac1 = (-10^18 + 1).to(10^18 - 1).oneOf()
+        nondet pow64 = (-1).to(2^64 - 1).oneOf()
+        pure val d1: Dec = { error: false, value: whole1 * ONE + frac1 }
+        all {
+            isBitLenOk(d1.value),
+            opcode' = "power",
+            opArg1' = d1,
+            opArg2' = { error: false, value: pow64 },
+            opResult' = power(d1, pow64),
+       }
+    }
 
     // construct a decimal provided whole and fractional parts
     action mkWholeDec(name: str, whole: int, f: (int) => Dec): bool = all {
@@ -130,22 +148,22 @@ module decimalTest {
     }
 
     // check this to produce an operation that results in error
-    def noError = not(opResult.error)
+    val noError = not(opResult.error)
 
     // if no error is reported, then the result is a proper a decimal
-    def isDecWhenNoError =
+    val isDecWhenNoError =
         not(opResult.error) implies isDec(opResult.value)
 
     // if no error is reported, then the decimal fits into MAX_DEC_BIT_LEN
-    def bitLenOkWhenNoError =
+    val bitLenOkWhenNoError =
         not(opResult.error) implies isBitLenOk(opResult.value)
 
     // If no error is reported, then the decimal fits into MAX_DEC_BIT_LEN.
     // Restricted to unary and binary operators, but not constructors,
     // which violate bitLenOkWhenNoError.
-    def bitLenOkWhenNoErrorNoCtor = or {
-        not(Set("add", "sub", "mul", "quo", "quoTruncate",
-                "mulTruncate", "ceil", "roundInt")
+    val bitLenOkWhenNoErrorNoCtor = or {
+        not(Set("add", "sub", "mul", "quo", "quoRoundup",
+                "quoTruncate", "mulTruncate", "ceil", "roundInt")
             .contains(opcode)),
         bitLenOkWhenNoError,
     }
@@ -153,10 +171,13 @@ module decimalTest {
     // If the result is a proper decimal, then no error is reported
     // (unless there is a division by zero).
     // This does not hold true for v0.46.4.
-    def noErrorWhenIsDec =
+    val noErrorWhenIsDec =
         isDec(opResult.value) implies or {
           not(opResult.error),
           opcode == "quo" and opArg2.value == 0,
           opcode == "quoTruncate" and opArg2.value == 0,
+          opcode == "quoRoundup" and opArg2.value == 0,
         }
+
+    // TODO: check power
 }
