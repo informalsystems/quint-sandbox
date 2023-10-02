@@ -1,3 +1,4 @@
+// -*- mode: Bluespec; -*-
 /**
  * A few tests to make sure that we do not break challenge2.
  */

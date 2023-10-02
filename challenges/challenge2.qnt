@@ -1,3 +1,4 @@
+// -*- mode: Bluespec; -*-
 /**
  * A Quint challenge after: 
  * https://solodit.xyz/issues/m-03-error-in-allowance-logic-code4rena-swivel-swivel-v3-contest-git
