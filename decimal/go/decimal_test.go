@@ -121,47 +121,45 @@ func executeTest(t *testing.T, s TestInput) {
 			assert.Equal(t, expected, actual, "the results should be equal")
 		}
 
-	/*
-		case "newDecFromInt":
-			if s.result.error {
-				require.Panics(t, func() { sdk.NewDecFromInt(sdk.NewIntFromBigInt(&s.arg1.value)) })
-			} else {
-				actual := sdk.NewDecFromInt(sdk.NewIntFromBigInt(&s.arg1.value))
-				expected := bigintToDec(t, &s.result.value)
-				assert.Equal(t, expected, actual, "the results should be equal")
-			}
+	case "newDecFromInt":
+		if s.result.error {
+			require.Panics(t, func() { sdk.NewDecFromInt(sdk.NewIntFromBigInt(&s.arg1.value)) })
+		} else {
+			actual := sdk.NewDecFromInt(sdk.NewIntFromBigInt(&s.arg1.value))
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
+		}
 
-		case "newDecFromIntWithPrec":
-			if s.result.error {
-				require.Panics(t, func() {
-					sdk.NewDecFromIntWithPrec(sdk.NewIntFromBigInt(&s.arg1.value), s.arg2.value.Int64())
-				})
-			} else {
-				actual := sdk.NewDecFromIntWithPrec(sdk.NewIntFromBigInt(&s.arg1.value), s.arg2.value.Int64())
-				expected := bigintToDec(t, &s.result.value)
-				assert.Equal(t, expected, actual, "the results should be equal")
-			}
+	case "newDecFromIntWithPrec":
+		if s.result.error {
+			require.Panics(t, func() {
+				sdk.NewDecFromIntWithPrec(sdk.NewIntFromBigInt(&s.arg1.value), s.arg2.value.Int64())
+			})
+		} else {
+			actual := sdk.NewDecFromIntWithPrec(sdk.NewIntFromBigInt(&s.arg1.value), s.arg2.value.Int64())
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
+		}
 
-		case "newDecFromBigInt":
-			if s.result.error {
-				require.Panics(t, func() { sdk.NewDecFromBigInt(&s.arg1.value) })
-			} else {
-				actual := sdk.NewDecFromBigInt(&s.arg1.value)
-				expected := bigintToDec(t, &s.result.value)
-				assert.Equal(t, expected, actual, "the results should be equal")
-			}
+	case "newDecFromBigInt":
+		if s.result.error {
+			require.Panics(t, func() { sdk.NewDecFromBigInt(&s.arg1.value) })
+		} else {
+			actual := sdk.NewDecFromBigInt(&s.arg1.value)
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
+		}
 
-		case "newDecFromBigIntWithPrec":
-			if s.result.error {
-				require.Panics(t, func() {
-					sdk.NewDecFromBigIntWithPrec(&s.arg1.value, s.arg2.value.Int64())
-				})
-			} else {
-				actual := sdk.NewDecFromBigIntWithPrec(&s.arg1.value, s.arg2.value.Int64())
-				expected := bigintToDec(t, &s.result.value)
-				assert.Equal(t, expected, actual, "the results should be equal")
-			}
-	*/
+	case "newDecFromBigIntWithPrec":
+		if s.result.error {
+			require.Panics(t, func() {
+				sdk.NewDecFromBigIntWithPrec(&s.arg1.value, s.arg2.value.Int64())
+			})
+		} else {
+			actual := sdk.NewDecFromBigIntWithPrec(&s.arg1.value, s.arg2.value.Int64())
+			expected := bigintToDec(t, &s.result.value)
+			assert.Equal(t, expected, actual, "the results should be equal")
+		}
 
 	case "add":
 		if s.result.error {
