@@ -177,7 +177,7 @@ module buggyCosmoverse {
     pure val INIT_BALANCE = 20
 
     // set of all user addresses
-    pure val USERS = Set("alice") //, "bob", "charlie", "eve")
+    pure val USERS = Set("alice", "bob", "charlie", "eve")
 
     // set of all validator addresses
     pure val VALIDATORS = Set("alice", "bob")
