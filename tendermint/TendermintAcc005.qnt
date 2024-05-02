@@ -157,7 +157,7 @@ module TendermintAcc {
   //********************* PROTOCOL INITIALIZATION ******************************
   def FaultyProposals(r) =
       tuples(Faulty, Values, RoundsOrNil)
-        .map((p, v, vr) =>
+        .map(((p, v, vr)) =>
           { src: p, round: r, proposal: v, validRound: vr })
 
   val AllFaultyProposals =
@@ -166,7 +166,7 @@ module TendermintAcc {
 
   def FaultyPrevotes(r) =
       tuples(Faulty, Values)
-        .map((p, v) => { src: p, round: r, id: v })
+        .map(((p, v)) => { src: p, round: r, id: v })
 
   val AllFaultyPrevotes =
       Rounds.map(r => FaultyPrevotes(r))
@@ -174,7 +174,7 @@ module TendermintAcc {
 
   def FaultyPrecommits(r) =
       tuples(Faulty, Values)
-        .map((p, v) => { src: p, round: r, id: v })
+        .map(((p, v)) => { src: p, round: r, id: v })
 
   val AllFaultyPrecommits =
       Rounds.map(r => FaultyPrecommits(r))
@@ -535,7 +535,7 @@ module TendermintAcc {
   // equivocation by a process p
   def EquivocationBy(p) =
     def EquivocationIn(S) =
-      tuples(S, S).exists((m1, m2) =>
+      tuples(S, S).exists(((m1, m2)) =>
         and {
           m1 != m2,
           m1.src == p,
@@ -552,7 +552,7 @@ module TendermintAcc {
 
   // amnesic behavior by a process p
   def AmnesiaBy(p) =
-      tuples(Rounds, Rounds).exists((r1, r2) =>
+      tuples(Rounds, Rounds).exists(((r1, r2)) =>
           and {
             r1 < r2,
             tuples(ValidValues, ValidValues).exists(vs =>
@@ -583,7 +583,7 @@ module TendermintAcc {
 
   // the safety property -- agreement
   val Agreement =
-    tuples(Corr, Corr).forall((p, q) =>
+    tuples(Corr, Corr).forall(((p, q)) =>
       or {
         decision.get(p) == NilValue,
         decision.get(q) == NilValue,
@@ -624,7 +624,7 @@ module TendermintAcc {
   // It is not exactly ~Agreement, as we do not want to see the states where
   // decision.get(p) = NilValue
   val NoAgreement =
-    tuples(Corr, Corr).forall((p, q) =>
+    tuples(Corr, Corr).forall(((p, q)) =>
       and {
         p != q,
         decision.get(p) != NilValue,
