@@ -1,0 +1,10 @@
+[package]
+name = "SimpleBank"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+itf = "0.2.4"
+num-bigint = "0.4.4"
+num-traits = "0.2.17"
+serde = { version = "1.0.145", default-features = false, features = ["derive"] }
