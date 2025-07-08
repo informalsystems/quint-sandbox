@@ -41,7 +41,9 @@ pub mod tests {
         #[serde(with = "As::<de::Option::<_>>")]
         pub error: Option<String>,
 
+        #[serde(rename = "mbt::actionTaken")]
         pub action_taken: String,
+        #[serde(rename = "mbt::nondetPicks")]
         pub nondet_picks: NondetPicks,
     }
 
@@ -77,7 +79,7 @@ pub mod tests {
                 let nondet_picks = state.value.nondet_picks;
 
                 match action_taken.as_str() {
-                    "q::init" => {
+                    "init" => {
                         println!("initializing");
                     }
                     "deposit_action" => {
@@ -121,7 +123,7 @@ pub mod tests {
                         let res = sell_investment(&mut bank_state, seller, id);
                         compare_error(state.value.error.clone(), res)
                     }
-                    _ => panic!("Invalid action taken"),
+                    action => panic!("Invalid action taken {}", action),
                 }
             }
         }
